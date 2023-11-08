@@ -7,12 +7,42 @@
 #include <errno.h>
 #include <sys/statvfs.h>
 
+#include "defs.h"
+
 #include "cpe453fs.h"
+
 
 struct Args
 {
 	int fd;
 };
+
+struct __attribute__ ((packed)) inodeHead{
+	unsigned char typeCode;
+	unsigned char modeNlink;
+	unsigned char uid;
+	unsigned char gid;
+	unsigned char accessTimeS;
+	unsigned char accessTimeNS;
+	unsigned char modTimeS;
+	unsigned char modTimeNS;
+	unsigned char statusTimeS;
+	unsigned char statusTimeNS;
+	uint16_t size;
+	uint16_t blocks;
+};
+
+inodeHead readInode(int fd, uint32_t offset){
+
+	inodeHead node;
+
+	if(pread(fd, (void*)(&node), INODESIZE, offset) != INODESIZE){
+		perror("failed to read entire Inode header\n");
+		exit(-1);
+	}
+
+	return node;
+}
 
 static void set_file_descriptor(void *args, int fd)
 {
@@ -22,7 +52,20 @@ static void set_file_descriptor(void *args, int fd)
 
 static int mygetattr(void *args, uint32_t block_num, struct stat *stbuf)
 {
-	// struct Args *fs = (struct Args*)args;
+	struct Args *fs = (struct Args*)args;
+
+	//check if valid blocknum?
+	inodeHead curHead = readInode(fs->fd, INDEX(block_num));
+
+	//stbuf->st_dev =
+	//stbuf->st_ino = 
+	stbuf->st_mode = curHead.modeNlink>>16;
+	stbuf->st_nlink = curHead.modeNlink&LINKMASK;
+	stbuf->st_uid = curHead.uid;
+	stbuf->st_gid = curHead.gid;
+	//...
+
+
     return 0;
 }
 
