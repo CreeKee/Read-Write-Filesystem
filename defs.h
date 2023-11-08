@@ -13,8 +13,6 @@
 #define ALLBLOCKSSIZE 8
 #define NEXTEXTENTSIZE 4
 
-#define LINKMASK 0XFF
-
 #define INODESIZE 128
 
 #define SUPERBLOCK 0
@@ -22,3 +20,9 @@
 
 #define BLOCKSIZE 4096
 #define INDEX(block) (block*BLOCKSIZE)
+#define ENDBLOCK(base, offset) ((offset - base) >= (BLOCKSIZE-BNUMSIZE))
+
+
+#define LENSIZE 2
+
+#define BNUMSIZE 4
