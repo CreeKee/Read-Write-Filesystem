@@ -232,8 +232,15 @@ static int myreadlink(void *args, uint32_t block_num, char *buf, size_t size)
 
 static uint32_t root_node(void *args)
 {
-	// struct Args *fs = (struct Args*)args;
-	return 0;
+	struct Args *fs = (struct Args*)args;
+
+	uint32_t root_block;
+
+	if(pread(fs->fd, (void*)(&root_block), BNUMSIZE, BLOCKSIZE - 2*BNUMSIZE)!= BNUMSIZE){
+		perror("failed to read root block\n");
+		exit(-1);
+	}
+	return root_block;
 }
 
 #ifdef  __cplusplus
