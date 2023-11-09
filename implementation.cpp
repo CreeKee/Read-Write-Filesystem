@@ -146,7 +146,7 @@ static int myreaddir(void *args, uint32_t block_num, void *buf, CPE453_readdir_c
 	inodeHead dirHead = readInode(fs->fd, offset);
 	dirEntry entry;
 
-	offset+=INODESIZE;
+	offset += INODESIZE;
 	
 	while(dirHead.size != 0){
 
@@ -225,7 +225,24 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 
 static int myreadlink(void *args, uint32_t block_num, char *buf, size_t size)
 {
-	// struct Args *fs = (struct Args*)args;
+	struct Args *fs = (struct Args*)args;
+	uint32_t base = INDEX(block_num);
+	//assuming file is properly openend
+	inodeHead inode = readInode(fs->fd, INDEX(block_num));
+
+	int32_t delta = std::min((int)size, (int)(inode.size));
+
+	if(delta < 0){
+		//TODO error
+		exit(-2);
+	}
+
+	if(pread(fs->fd, buf, delta, base+INODESIZE) != delta){
+		perror("failed to read from file into buffer");
+		exit(-1);
+	}
+
+
 	return 0;
 }
 
