@@ -10,16 +10,16 @@ endif
 CFLAGS=-Wall -Werror -DDEBUG -g -D_FILE_OFFSET_BITS=64 $(OS_DEF)
 CXXFLAGS=$(CFLAGS)
 
-all: hello_cpe453fs cpe453fs
+all: cpe453fs #hello_cpe453fs 
 
 cpe453fs: cpe453fs_main.o implementation.o
 	$(CXX) $(CXXFLAGS) cpe453fs_main.o implementation.o -o $@ $(FUSE_LINK)
 
-hello_cpe453fs: cpe453fs_main.o hello_fs.o
-	$(CXX) $(CXXFLAGS) cpe453fs_main.o hello_fs.o -o $@ $(FUSE_LINK)
+#hello_cpe453fs: cpe453fs_main.o hello_fs.o
+	#$(CXX) $(CXXFLAGS) cpe453fs_main.o hello_fs.o -o $@ $(FUSE_LINK)
 
 cpe453fs_main.o: cpe453fs_main.c cpe453fs.h
-hello_fs.o: hello_fs.cpp cpe453fs.h
+#hello_fs.o: hello_fs.cpp cpe453fs.h
 implementation.o: implementation.cpp cpe453fs.h
 
 clean:
