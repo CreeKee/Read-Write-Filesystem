@@ -13,7 +13,7 @@
 #define ALLBLOCKSSIZE 8
 #define NEXTEXTENTSIZE 4
 
-#define INODESIZE 128
+#define INODESIZE 64
 
 #define SUPERBLOCK 0
 #define INODE 1

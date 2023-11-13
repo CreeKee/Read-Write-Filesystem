@@ -13,38 +13,49 @@
 #include "cpe453fs.h"
 
 
+/**************************************************************/
+/*Structs*/
+/**************************************************************/
+
 struct Args
 {
 	int fd;
 };
 
+struct __attribute__ ((packed)) inodeHead{
+	uint32_t typeCode;
+	uint16_t mode;
+	uint16_t Nlink;
+	uint32_t uid;
+	uint32_t gid;
+	uint32_t rdev;
+	uint32_t flags;
+	uint32_t accessTimeS;
+	uint32_t accessTimeNS;
+	uint32_t modTimeS;
+	uint32_t modTimeNS;
+	uint32_t statusTimeS;
+	uint32_t statusTimeNS;
+	uint64_t size;
+	uint64_t blocks;
+};
+
 struct dirEntry{
-	uint8_t len;
-	uint16_t inode_num;
+	uint16_t len;
+	uint32_t inode_num;
 	char* name;
 	inodeHead inode;
 };
 
-struct __attribute__ ((packed)) inodeHead{
-	uint16_t typeCode;
-	uint8_t mode;
-	uint8_t Nlink;
-	uint16_t uid;
-	uint16_t gid;
-	uint16_t rdev;
-	uint16_t flags;
-	uint16_t accessTimeS;
-	uint16_t accessTimeNS;
-	uint16_t modTimeS;
-	uint16_t modTimeNS;
-	uint16_t statusTimeS;
-	uint16_t statusTimeNS;
-	uint32_t size;
-	uint32_t blocks;
-};
 
+
+/**************************************************************/
+/*Helper functions*/
+/**************************************************************/
+
+/*verified*/
 inodeHead readInode(int fd, uint32_t offset){
-
+	fprintf(stderr,"reading Inode at offset: %d\n",offset);
 	inodeHead node;
 
 	if(pread(fd, (void*)(&node), INODESIZE, offset) != INODESIZE){
@@ -55,7 +66,10 @@ inodeHead readInode(int fd, uint32_t offset){
 	return node;
 }
 
+/*verified*/
 dirEntry readDirEntry(int fd, uint32_t* offset){
+
+	fprintf(stderr, "reading dir entry at offset %d\n", *offset);
 
 	dirEntry entry;
 
@@ -75,22 +89,23 @@ dirEntry readDirEntry(int fd, uint32_t* offset){
 		*offset += BNUMSIZE;
 	}
 
-	if((entry.name = (char*)calloc(entry.len+1, sizeof(char))) == NULL){
+	if((entry.name = (char*)calloc(entry.len+1-BNUMSIZE-LENSIZE, sizeof(char))) == NULL){
 		perror("failed to allocate space for dir entry name\n");
 		exit(-1);
 	}
 
-	if(pread(fd, (void*)(&(entry.inode_num)), entry.len, *offset) != entry.len){
+	if(pread(fd, (void*)(entry.name), entry.len-BNUMSIZE-LENSIZE, *offset) != entry.len-BNUMSIZE-LENSIZE){
 		perror("failed to read dir entry name\n");
 		exit(-1);
 	}
 	else{
-		*offset += entry.len;
+		*offset += entry.len-BNUMSIZE-LENSIZE;
 	}
-
+	fprintf(stderr, "finished reading dir entry and found len %d, inode num %x, and name %s\n",entry.len, entry.inode_num, entry.name);
 	return entry;
 }
 
+/*untested*/
 uint32_t moveToExtent(int fd, uint32_t* base, uint32_t offset){
 
 	if(pread(fd, (void*)(base), BNUMSIZE, offset) != BNUMSIZE){
@@ -102,14 +117,21 @@ uint32_t moveToExtent(int fd, uint32_t* base, uint32_t offset){
 	return *base+4;
 }
 
+
+
+/**************************************************************/
+/*Read only functions*/
+/**************************************************************/
+
+/*verified*/
 static void set_file_descriptor(void *args, int fd)
 {
 	struct Args *fs = (struct Args*)args;
 	fs->fd = fd;
 }
 
-static int mygetattr(void *args, uint32_t block_num, struct stat *stbuf)
-{
+/*verified*/
+static int mygetattr(void *args, uint32_t block_num, struct stat *stbuf){
 	struct Args *fs = (struct Args*)args;
 
 	//check if valid blocknum?
@@ -139,28 +161,24 @@ static int mygetattr(void *args, uint32_t block_num, struct stat *stbuf)
     return 0;
 }
 
+/*trusted*/
 static int myreaddir(void *args, uint32_t block_num, void *buf, CPE453_readdir_callback_t cb)
 {
+	fprintf(stderr, "reading dir at block num %d\n",block_num);
 	struct Args *fs = (struct Args*)args;
-	uint32_t offset, base = INDEX(block_num);
-	inodeHead dirHead = readInode(fs->fd, offset);
+	uint32_t base = INDEX(block_num);
+	inodeHead dirHead = readInode(fs->fd, base);
+	uint32_t offset = base+INODESIZE;
 	dirEntry entry;
 
-	offset += INODESIZE;
-	
-	while(dirHead.size != 0){
+	while((signed)dirHead.size > 0){
 
 		entry = readDirEntry(fs->fd, &offset);
 		entry.inode = readInode(fs->fd, INDEX(entry.inode_num));
-
-		if(S_ISDIR(entry.inode.mode)){
-			myreaddir(args, entry.inode_num, buf, cb);
-		}
-		else{
-			cb(buf, entry.name, entry.inode_num);
-		}
-		dirHead.size -= (LENSIZE+BNUMSIZE+entry.len);
-
+		
+		cb(buf, entry.name, entry.inode_num);
+		
+		dirHead.size -= (entry.len);
 		free(entry.name);
 
 		if(ENDBLOCK(base, offset)) offset = moveToExtent(fs->fd, &base, offset);
@@ -204,7 +222,7 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 		metaSize = BLOCKSIZE - 2*BNUMSIZE - TYPECODESIZE;
 	}
 
-	cur = base+BNUMSIZE+TYPECODESIZE+offset;
+	cur = base+BNUMSIZE+TYPECODESIZE+offset+INODESIZE;
 
 	while(delta > 0){
 
@@ -216,11 +234,12 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 		}
 		index += metaSize;
 		delta -= metaSize;
+		
 
 		if(delta>0) cur = moveToExtent(fs->fd, &base, base+BLOCKSIZE-BNUMSIZE);
 	}
 
-    return 0;
+    return index;
 }
 
 static int myreadlink(void *args, uint32_t block_num, char *buf, size_t size)
@@ -246,7 +265,6 @@ static int myreadlink(void *args, uint32_t block_num, char *buf, size_t size)
 	return 0;
 }
 
-
 static uint32_t root_node(void *args)
 {
 	struct Args *fs = (struct Args*)args;
@@ -259,6 +277,10 @@ static uint32_t root_node(void *args)
 	}
 	return root_block;
 }
+
+
+
+
 
 #ifdef  __cplusplus
 extern "C" {
