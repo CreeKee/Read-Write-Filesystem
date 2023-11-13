@@ -16,7 +16,7 @@ cpe453fs: cpe453fs_main.o implementation.o
 	$(CXX) $(CXXFLAGS) cpe453fs_main.o implementation.o -o $@ $(FUSE_LINK)
 
 #hello_cpe453fs: cpe453fs_main.o hello_fs.o
-	#$(CXX) $(CXXFLAGS) cpe453fs_main.o hello_fs.o -o $@ $(FUSE_LINK)
+#	$(CXX) $(CXXFLAGS) cpe453fs_main.o hello_fs.o -o $@ $(FUSE_LINK)
 
 cpe453fs_main.o: cpe453fs_main.c cpe453fs.h
 #hello_fs.o: hello_fs.cpp cpe453fs.h
@@ -24,6 +24,10 @@ implementation.o: implementation.cpp cpe453fs.h
 
 clean:
 	rm -f cpe453fs_main.o implementation.o hello_fs.o cpe453fs hello_cpe453fs
+
+create:
+	$(CXX) $(CXXFLAGS) create_fs.32
+	
 
 run:
 	fusermount -u /tmp/skiefer/mnt
