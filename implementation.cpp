@@ -114,7 +114,7 @@ uint32_t moveToExtent(int fd, uint32_t* base, uint32_t offset){
 	}
 
 	*base = INDEX(*base);
-	return *base+4;
+	return *base+BNUMSIZE;
 }
 
 
@@ -222,7 +222,7 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 		metaSize = BLOCKSIZE - 2*BNUMSIZE - TYPECODESIZE;
 	}
 
-	cur = base+BNUMSIZE+TYPECODESIZE+offset+INODESIZE;
+	cur = base+offset+INODESIZE;
 
 	while(delta > 0){
 
