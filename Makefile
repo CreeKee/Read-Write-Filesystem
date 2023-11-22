@@ -25,9 +25,7 @@ implementation.o: implementation.cpp cpe453fs.h
 clean:
 	rm -f cpe453fs_main.o implementation.o hello_fs.o cpe453fs hello_cpe453fs
 
-create:
-	$(CXX) $(CXXFLAGS) create_fs.32
-	
+
 
 run:
 	fusermount -u /tmp/skiefer/mnt
