@@ -49,6 +49,8 @@
 #define SIZEDEX 48
 #define ALLBLOCKSDEX 56
 
+#define EXTENT 3
+
 
 #define LAZYWRITE(a, b) (pwrite(fs->fd, (void*)(&a), BNUMSIZE, INDEX(block_num)+b) != BNUMSIZE)
 #define dread(fd, buff, size, offset, msg) if(pread(fd, buff, size, offset) != 0){perror(msg);exit(-1);}
@@ -218,7 +220,11 @@ uint32_t moveToExtent(int fd, uint32_t* base, uint32_t offset, uint32_t headSize
 	return *base+headSize;
 }
 
+void freeExtentBlock(int fd, uint32_t target_block_num, uint32_t prev_block_num){
 
+	dread();
+	
+}
 
 /**************************************************************/
 /*Read only functions*/
@@ -443,6 +449,7 @@ int rmdir(void* args, uint32_t block_num, const char *name){
 
 			if((base = removeDirEntry(fs->fd, INDEX(block_num), base, offset, entry.len, dirHead.size-entry.len)) != 0){
 				//collapse empty extent block
+				freeExtent(base);
 			}
 
 			//remove delted directory blocks
