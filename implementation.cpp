@@ -49,7 +49,8 @@
 #define SIZEDEX 48
 #define ALLBLOCKSDEX 56
 
-#define EXTENT 3
+#define EXTENT_NUM 3
+#define FREE_NUM 5
 
 
 #define LAZYWRITE(a, b) (pwrite(fs->fd, (void*)(&a), BNUMSIZE, INDEX(block_num)+b) != BNUMSIZE)
@@ -94,38 +95,48 @@ struct dirEntry{
 /**************************************************************
 cache functions
 **************************************************************/
-uint32_t* MRUblock = (uint32_t*)calloc(BLOCKSIZE, sizeof(uint32_t));
+uint32_t* nextcache = (uint32_t*)malloc(sizeof(uint32_t)<<BLOCKSHIFT);
 uint32_t bmsize = BLOCKSIZE;
 
-inline uint32_t getMRU(uint32_t fileHead){
-
-	uint32_t mru = 0;
-
-	if(fileHead >= BLOCKSIZE){
-		expandCache();
-	}
-	else{
-		mru = MRUblock[fileHead];
-	}
-	return mru;
+void myinit(void){
+	memset(nextcache, -1, BLOCKSIZE*sizeof(uint32_t));
 }
 
-inline void setMRU(uint32_t fileHead, uint32_t curBlock){
-	if(fileHead >= BLOCKSIZE){
-		expandCache();
-	}
-	
-	MRUblock[fileHead] = curBlock;
-
+void mydestroy(void){
+	free(nextcache);
 }
 
 inline void expandCache(){
 	bmsize = bmsize << 1;
-	if((MRUblock = (uint32_t*)realloc(MRUblock, bmsize)) == NULL){
+	if((nextcache = (uint32_t*)realloc(nextcache, bmsize)) == NULL){
 		perror("failed to reallocate cache");
 		exit(-1);
 	}
-	memset(MRUblock+(bmsize>>1), 0, bmsize>>1);
+	memset(nextcache+(bmsize>>1), -1, sizeof(uint32_t)*(bmsize>>1));
+}
+
+inline uint32_t getNextCache(int fd, uint32_t block_num){
+
+	uint32_t mru = 0;
+
+	if(block_num >= bmsize){
+		expandCache();
+	}
+	if((signed)(mru = nextcache[block_num]) == -1){
+
+		dread(fd, (void*)(&nextcache[block_num]), BNUMSIZE, INDEX(block_num)+BLOCKSIZE-BNUMSIZE, "failed to rea value into cache");
+		mru = nextcache[block_num];
+	}
+	return mru;
+}
+
+inline void setNextCache(uint32_t cur_block_num, uint32_t next_block_num){
+	if(cur_block_num >= BLOCKSIZE){
+		expandCache();
+	}
+	
+	nextcache[cur_block_num] = next_block_num;
+
 }
 
 
@@ -196,17 +207,7 @@ dirEntry readDirEntry(int fd, uint32_t* offset){
 returns the block number of a now empty extent block which needs to be removed
 or 0 if no extent block has been emptied
 */
-uint32_t removeDirEntry(int fd, uint32_t dirHeadOffset, uint32_t base, uint32_t offset, uint32_t size, uint64_t newDirSize){
-	char remainder[BLOCKSIZE] = {0};
 
-	dread(fd, remainder, ((offset%BLOCKSIZE) - size) - BNUMSIZE, offset+size, "failed to read dir remainder\n");
-	dwrite(fd, remainder, ((offset%BLOCKSIZE)) - BNUMSIZE, offset, "failed to write dir remainder\n");
-
-	dwrite(fd, (void*)(&offset), SIZESIZE, dirHeadOffset+SIZEDEX, "failed to write new dir size\n");
-
-	return remainder[0] == 0 && offset - base == BNUMSIZE ? base : 0;
-
-}
 
 /*verified*/
 uint32_t moveToExtent(int fd, uint32_t* base, uint32_t offset, uint32_t headSize){
@@ -220,10 +221,59 @@ uint32_t moveToExtent(int fd, uint32_t* base, uint32_t offset, uint32_t headSize
 	return *base+headSize;
 }
 
-void freeExtentBlock(int fd, uint32_t target_block_num, uint32_t prev_block_num){
+void freeBlock(int fd, uint32_t target_offset){
 
-	dread();
+	//initialize free block stack
+	uint32_t free_num_buff[2] = {FREE_NUM,getNextCache(fd, 0)};
+
+	setNextCache(target_offset>>BLOCKSHIFT, free_num_buff[1]);
+
+	//free targeted block
+	dwrite(fd, (void*)(free_num_buff), BNUMSIZE<<1, target_offset+BLOCKSIZE-BNUMSIZE, "failed to write continuing block num");
+
+	//update next free block in both cache and super block
+	setNextCache(0, (free_num_buff[1] = target_offset >> BLOCKSHIFT));
+	dwrite(fd, (void*)(&free_num_buff[1]), BNUMSIZE, BLOCKSIZE-BNUMSIZE, "failed to update free stack head in super block");
+
+}
+
+void freeExtentBlock(int fd, uint32_t target_block_offset, uint32_t prev_block_offset){
 	
+	//get address of next block in the chain
+	uint32_t num = getNextCache(fd, target_block_offset>>BLOCKSHIFT);
+
+	//connect previous block to next block
+	dwrite(fd, (void*)(&num), BNUMSIZE, prev_block_offset+BLOCKSIZE-BNUMSIZE, "failed to write continuing block num");
+	setNextCache(prev_block_offset>>BLOCKSHIFT, num);
+
+	//free the target block
+	freeBlock(fd, target_block_offset);
+}
+
+void chainFree(int fd, uint32_t start_offset){
+
+	uint32_t target_block = start_offset>>BLOCKSHIFT;
+
+	while(target_block != 0){
+		freeBlock(fd, INDEX(target_block));
+		target_block = getNextCache(fd, target_block);
+	}
+}
+
+void removeDirEntry(int fd, uint32_t dirHeadOffset, uint32_t base, uint32_t offset, uint32_t size, uint64_t newDirSize, uint32_t prev_block_num){
+	char remainder[BLOCKSIZE] = {0};
+
+	//shift remainder of directory data to cover over the deleted entry
+	dread(fd, remainder, ((offset%BLOCKSIZE) - size) - BNUMSIZE, offset+size, "failed to read dir remainder\n");
+	dwrite(fd, remainder, ((offset%BLOCKSIZE)) - BNUMSIZE, offset, "failed to write dir remainder\n");
+
+	//update new directory size
+	dwrite(fd, (void*)(&offset), SIZESIZE, dirHeadOffset+SIZEDEX, "failed to write new dir size\n");
+
+	//check if an extent block has now been emptied and should be freed
+	if(remainder[0] == 0 && offset - base == BNUMSIZE){
+		freeExtentBlock(fd, base, prev_block_num);
+	}
 }
 
 /**************************************************************/
@@ -269,8 +319,7 @@ static int mygetattr(void *args, uint32_t block_num, struct stat *stbuf){
 }
 
 /*trusted*/
-static int myreaddir(void *args, uint32_t block_num, void *buf, CPE453_readdir_callback_t cb)
-{
+static int myreaddir(void *args, uint32_t block_num, void *buf, CPE453_readdir_callback_t cb){
 	//fprintf(stderr, "reading dir at block num %d\n",block_num);
 	struct Args *fs = (struct Args*)args;
 	uint32_t base = INDEX(block_num);
@@ -426,10 +475,10 @@ int utimens(void* args, uint32_t block_num, const struct timespec tv[2]){
 int rmdir(void* args, uint32_t block_num, const char *name){
 	//locate entry name
 
-	bool found = false;
 	struct Args *fs = (struct Args*)args;
+	bool found = false;
 	dirEntry entry;
-	
+	uint32_t prev = 0;
 	uint32_t base = INDEX(block_num);
 	uint32_t offset = base+INODESIZE;
 
@@ -440,29 +489,27 @@ int rmdir(void* args, uint32_t block_num, const char *name){
 		entry = readDirEntry(fs->fd, &offset);
 
 		if(entry.len == 0){
-
+			prev = base;
 			offset = moveToExtent(fs->fd, &base, base+BLOCKSIZE-BNUMSIZE, DIREXTENTHEADSIZE);
+			
 
 		}
 		else if(strcmp(name, entry.name) == 0){
 			found = true;
 
-			if((base = removeDirEntry(fs->fd, INDEX(block_num), base, offset, entry.len, dirHead.size-entry.len)) != 0){
-				//collapse empty extent block
-				freeExtent(base);
-			}
+			removeDirEntry(fs->fd, INDEX(block_num), base, offset, entry.len, dirHead.size-entry.len, prev);
 
-			//remove delted directory blocks
-
-			free(entry.name);
-		}
-		else{
-			free(entry.name);
+			chainFree(fs->fd, entry.inode_num);
 		}
 
-		if(ENDBLOCK(base, offset)) offset = moveToExtent(fs->fd, &base, base+BLOCKSIZE-BNUMSIZE, DIREXTENTHEADSIZE);
+		free(entry.name);
+
+		if(ENDBLOCK(base, offset)){
+			prev = base;
+			offset = moveToExtent(fs->fd, &base, base+BLOCKSIZE-BNUMSIZE, DIREXTENTHEADSIZE);
+		}
 	}
-
+	return 0;
 	//free dir blocks
 
 	//create buffer for remaining section of dir
@@ -470,6 +517,57 @@ int rmdir(void* args, uint32_t block_num, const char *name){
 	//write remainder of dir entry
 	//update entry count
 } 
+
+int unlink(void* args, uint32_t block_num, const char *name){
+	struct Args *fs = (struct Args*)args;
+
+	fprintf(stderr, "unlink placeholder\n");
+	return 0;
+}
+
+int mknod(void* args, uint32_t parent_block, const char *name, mode_t new_mode, dev_t new_dev){
+	struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "mknod placeholder\n");
+	return 0;
+}
+
+int symlink(void* args, uint32_t parent_block, const char *name, const char *link_dest){
+	struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "symlink placeholder\n");
+	return 0;
+}
+
+int mkdir(void* args, uint32_t parent_block, const char *name, mode_t new_mode){
+	struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "mkdir placeholder\n");
+	return 0;
+}
+
+int link(void* args, uint32_t parent_block, const char *name, uint32_t dest_block){
+	struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "link placeholder\n");
+	return 0;
+}
+
+int rename(void* args, uint32_t old_parent, const char *old_name, uint32_t new_parent, const char *new_name){
+	struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "rename placeholder\n");
+	return 0;
+}
+
+int truncate(void* args, uint32_t block_num, off_t new_size){
+	struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "truncate placeholder\n");
+	return 0;
+}
+
+int write(void* args, uint32_t block_num, const char *buff, size_t wr_len, off_t wr_offset){
+	struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "write placeholder\n");
+	return 0;
+}
+
+
 
 #ifdef  __cplusplus
 extern "C" {
@@ -489,6 +587,8 @@ struct cpe453fs_ops *CPE453_get_operations(void)
 	ops.readlink = myreadlink;
 	ops.root_node = root_node;
 	ops.set_file_descriptor = set_file_descriptor;
+	ops.init = myinit;
+	ops.destroy = mydestroy;
 
 	return &ops;
 }
