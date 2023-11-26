@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <sys/statvfs.h>
 #include <algorithm>
+#include <fuse.h>
 
 #include "cpe453fs.h"
 
@@ -40,6 +41,7 @@
 #define BNUMSIZE 4
 
 #define MODEDEX 4
+#define NLINKDEX 6
 #define UIDDEX 8
 #define GIDDEX 12
 #define ATIMESDEX 24
@@ -54,12 +56,12 @@
 
 
 #define LAZYWRITE(a, b) (pwrite(fs->fd, (void*)(&a), BNUMSIZE, INDEX(block_num)+b) != BNUMSIZE)
-#define dread(fd, buff, size, offset, msg) if(pread(fd, buff, size, offset) != 0){perror(msg);exit(-1);}
-#define dwrite(fd, buff, size, offset, msg) if(pwrite(fd, buff, size, offset) != 0){perror(msg);exit(-1);}
+#define dread(fd, buff, size, offset, msg) if(pread(fd, (void*)(buff), size, offset) != size){perror(msg);exit(-1);}
+#define dwrite(fd, buff, size, offset, msg) if(pwrite(fd, (void*)(buff), size, offset) != size){perror(msg);exit(-1);}
 
-/**************************************************************/
-/*Structs*/
-/**************************************************************/
+/**************************************************************
+Structs and Classes
+**************************************************************/
 
 struct Args
 {
@@ -90,6 +92,106 @@ struct dirEntry{
 	char* name;
 	inodeHead inode;
 };
+
+class dirData{
+
+
+	public:
+	dirEntry entry;
+	uint32_t base;
+	uint32_t offset;
+	uint32_t prev;
+	int fd;
+	inodeHead parentDir;
+	uint32_t parent_offset;
+	bool found;
+
+	
+	dirData(int fd, uint32_t block_num, uint32_t parent_block, const char* name);
+	~dirData();
+
+	bool nextEntry();
+	bool check(const char* name);
+	void removeDirEntry();
+
+	bool exists(){return len != 0;}
+	bool entryIsEmpty(){return entry.inode.size == 0;}
+	uint16_t entryMode(){return entry.inode.mode;}
+
+	void remove(){
+		removeDirEntry(parentDir.size-entry.len);
+		chainFree(fd, entry.inode_num);
+	}
+
+};
+
+void dirData::removeDirEntry(){
+	
+	char remainder[BLOCKSIZE] = {0};
+	uint32_t remaindersize = ((BLOCKSIZE-(offset%BLOCKSIZE)) - entry.len) - BNUMSIZE;
+
+	uint32_t starset = offset-entry.len
+	uint32_t newDirSize = parentDir.size-entry.len;
+
+	//shift remainder of directory data to cover over the deleted entry
+	fprintf(stderr, "reading size of %d at offset %d with base %d\n", remaindersize, offset+size, base);
+	dread(fd, remainder, remaindersize, starset+entry.len, "failed to read dir remainder\n");
+	dwrite(fd, remainder, remaindersize+entry.len, starset, "failed to write dir remainder\n");
+
+	//update new directory size
+	dwrite(fd, &newDirSize, SIZESIZE, parent_offset+SIZEDEX, "failed to write new dir size\n");
+
+	//check if an extent block has now been emptied and should be freed
+	if(remainder[0] == 0 && offset - base == BNUMSIZE){
+		freeExtentBlock(fd, base, prev);
+	}
+}
+
+bool dirData::nextEntry(){
+	entry = readDirEntry(fd, &(offset));
+
+	prev = base;
+	offset = moveToExtent(fd, &(base), DIREXTENTHEADSIZE);
+	dirSize -= (entry.len);
+
+	if(ENDBLOCK(base, offset)){
+		prev = base;
+		offset = moveToExtent(fd, &(base), DIREXTENTHEADSIZE);
+	}
+
+	return base != 0;
+}
+
+bool dirData::check(const char* name){
+	if(entry.name != NULL && strcmp(name, entry.name) == 0){
+		data.entry.inode = readInode(fd, INDEX(data.entry.inode_num));
+		found = true;
+		fprintf(stderr,"found dir entry in parent dir - len: %d name: %s\n", data.entry.len, data.entry.name);
+	}
+}
+
+dirData::dirData(int fd, uint32_t block_num, const char* name){
+	
+	this.fd = fd;
+	parent_offset = INDEX(block_num);
+	parentDir = readInode(fd, INDEX(block_num));
+	base = INDEX(block_num);
+	entry.name = NULL;
+	entry.len = 0;
+	offset = data.base+INODESIZE;
+	entry.name = NULL;
+	entry.len = 0;
+	
+	while(this.nextEntry() && !(found = this.check(name)));
+
+
+}
+
+dirData::~dirData(){
+	if(entry.name != NULL){
+		free(entry.name);
+	}
+}
 
 
 /**************************************************************
@@ -152,10 +254,7 @@ inodeHead readInode(int fd, uint32_t offset){
 	//fprintf(stderr,"reading Inode at offset: %d\n",offset);
 	inodeHead node;
 
-	if(pread(fd, (void*)(&node), INODESIZE, offset) != INODESIZE){
-		perror("failed to read entire Inode header\n");
-		exit(-1);
-	}
+	dread(fd, &node, INODESIZE, offset, "failed to read entire Inode header\n");
 
 	return node;
 }
@@ -167,19 +266,13 @@ dirEntry readDirEntry(int fd, uint32_t* offset){
 
 	dirEntry entry;
 
-	if(pread(fd, (void*)(&(entry.len)), LENSIZE, *offset) != LENSIZE){
-		perror("failed to read dir entry size\n");
-		exit(-1);
-	}
+	dread(fd, &(entry.len), LENSIZE, *offset, "failed to read dir entry size\n")
 	else{
 		*offset += LENSIZE;
 	}
 
 	if(entry.len != 0){
-		if(pread(fd, (void*)(&(entry.inode_num)), BNUMSIZE, *offset) != BNUMSIZE){
-			perror("failed to read dir entry inode number\n");
-			exit(-1);
-		}
+		dread(fd, &(entry.inode_num), BNUMSIZE, *offset, "failed to read dir entry inode number\n")
 		else{
 			*offset += BNUMSIZE;
 		}
@@ -191,10 +284,7 @@ dirEntry readDirEntry(int fd, uint32_t* offset){
 			exit(-1);
 		}
 
-		if(pread(fd, (void*)(entry.name), entry.len-BNUMSIZE-LENSIZE, *offset) != entry.len-BNUMSIZE-LENSIZE){
-			perror("failed to read dir entry name\n");
-			exit(-1);
-		}
+		dread(fd, entry.name, entry.len-BNUMSIZE-LENSIZE, *offset, "failed to read dir entry name\n")
 		else{
 			*offset += entry.len-BNUMSIZE-LENSIZE;
 		}
@@ -203,21 +293,10 @@ dirEntry readDirEntry(int fd, uint32_t* offset){
 	return entry;
 }
 
-/*
-returns the block number of a now empty extent block which needs to be removed
-or 0 if no extent block has been emptied
-*/
-
-
 /*verified*/
-uint32_t moveToExtent(int fd, uint32_t* base, uint32_t offset, uint32_t headSize){
+uint32_t moveToExtent(int fd, uint32_t* base, uint32_t headSize){
 
-	if(pread(fd, (void*)(base), BNUMSIZE, offset) != BNUMSIZE){
-		perror("failed to read extent number\n");
-		exit(-1);
-	}
-
-	*base = INDEX(*base);
+	*base = INDEX(getNextCache(fd, *base>>BLOCKSHIFT));
 	return *base+headSize;
 }
 
@@ -260,21 +339,8 @@ void chainFree(int fd, uint32_t start_offset){
 	}
 }
 
-void removeDirEntry(int fd, uint32_t dirHeadOffset, uint32_t base, uint32_t offset, uint32_t size, uint64_t newDirSize, uint32_t prev_block_num){
-	char remainder[BLOCKSIZE] = {0};
 
-	//shift remainder of directory data to cover over the deleted entry
-	dread(fd, remainder, ((offset%BLOCKSIZE) - size) - BNUMSIZE, offset+size, "failed to read dir remainder\n");
-	dwrite(fd, remainder, ((offset%BLOCKSIZE)) - BNUMSIZE, offset, "failed to write dir remainder\n");
 
-	//update new directory size
-	dwrite(fd, (void*)(&offset), SIZESIZE, dirHeadOffset+SIZEDEX, "failed to write new dir size\n");
-
-	//check if an extent block has now been emptied and should be freed
-	if(remainder[0] == 0 && offset - base == BNUMSIZE){
-		freeExtentBlock(fd, base, prev_block_num);
-	}
-}
 
 /**************************************************************/
 /*Read only functions*/
@@ -341,10 +407,10 @@ static int myreaddir(void *args, uint32_t block_num, void *buf, CPE453_readdir_c
 			free(entry.name);
 		}
 		else{
-			offset = moveToExtent(fs->fd, &base, base+BLOCKSIZE-BNUMSIZE, DIREXTENTHEADSIZE);
+			offset = moveToExtent(fs->fd, &base, DIREXTENTHEADSIZE);
 		}
 
-		if(ENDBLOCK(base, offset)) offset = moveToExtent(fs->fd, &base, base+BLOCKSIZE-BNUMSIZE, DIREXTENTHEADSIZE);
+		if(ENDBLOCK(base, offset)) offset = moveToExtent(fs->fd, &base, DIREXTENTHEADSIZE);
 	}
     return 0;
 }
@@ -385,7 +451,7 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 	cur = base+INODESIZE;
 
 	while(offset >= metaSize){
-		cur = moveToExtent(fs->fd, &base, base+BLOCKSIZE-BNUMSIZE, FILEEXTENTHEADSIZE);
+		cur = moveToExtent(fs->fd, &base, FILEEXTENTHEADSIZE);
 		offset -= metaSize;
 		metaSize = BLOCKSIZE - FILEEXTENTHEADSIZE - BNUMSIZE;
 	}
@@ -403,7 +469,7 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 		delta -= metaSize;
 		
 
-		if(delta>0) cur = moveToExtent(fs->fd, &base, base+BLOCKSIZE-BNUMSIZE, FILEEXTENTHEADSIZE);
+		if(delta>0) cur = moveToExtent(fs->fd, &base, FILEEXTENTHEADSIZE);
 	}
 
     return index;
@@ -473,97 +539,115 @@ int utimens(void* args, uint32_t block_num, const struct timespec tv[2]){
 }
 
 int rmdir(void* args, uint32_t block_num, const char *name){
-	//locate entry name
 
 	struct Args *fs = (struct Args*)args;
-	bool found = false;
-	dirEntry entry;
-	uint32_t prev = 0;
-	uint32_t base = INDEX(block_num);
-	uint32_t offset = base+INODESIZE;
+	
+	dirData data(fs->fd, block_num, name);
+	int ret = -1;
 
-	inodeHead dirHead = readInode(fs->fd, base);
+	if(!data.found){
+		errno = ENOENT;
 
-	while(!found){
+	} else if(!S_ISDIR(data.entryMode())){
 
-		entry = readDirEntry(fs->fd, &offset);
+		errno = ENOTDIR;
 
-		if(entry.len == 0){
-			prev = base;
-			offset = moveToExtent(fs->fd, &base, base+BLOCKSIZE-BNUMSIZE, DIREXTENTHEADSIZE);
-			
-
-		}
-		else if(strcmp(name, entry.name) == 0){
-			found = true;
-
-			removeDirEntry(fs->fd, INDEX(block_num), base, offset, entry.len, dirHead.size-entry.len, prev);
-
-			chainFree(fs->fd, entry.inode_num);
-		}
-
-		free(entry.name);
-
-		if(ENDBLOCK(base, offset)){
-			prev = base;
-			offset = moveToExtent(fs->fd, &base, base+BLOCKSIZE-BNUMSIZE, DIREXTENTHEADSIZE);
-		}
 	}
-	return 0;
-	//free dir blocks
+	else if(data.entryIsEmpty()){
+		data.remove();
+		ret = 0;
+	}
+	else{
+		fprintf(stderr,"-> when deleting dir: data.entry.inode.size == %d\n", data.entry.inode.size);
+		errno = ENOTEMPTY;
+				
+	}
 
-	//create buffer for remaining section of dir
-	//read remainder of dir entry
-	//write remainder of dir entry
-	//update entry count
+	return ret;
 } 
 
 int unlink(void* args, uint32_t block_num, const char *name){
+	
 	struct Args *fs = (struct Args*)args;
+	inodeHead dirHead = readInode(fs->fd, INDEX(block_num));
+	dirData data = searchDir(fs->fd, block_num, name);
+	int ret = -1;
 
-	fprintf(stderr, "unlink placeholder\n");
-	return 0;
+	if(data.entry.len == 0){
+
+		errno = ENOENT;
+
+	} else if(S_ISDIR(data.entry.inode.mode)){
+
+		errno = EISDIR;
+
+	}
+	else{
+		//TODO check perms? 
+		removeDirEntry(fs->fd, INDEX(block_num), data.base, data.offset-data.entry.len, data.entry.len, dirHead.size-data.entry.len, data.prev);
+		data.entry.inode.Nlink--;
+		ret = 0;
+
+		if(data.entry.inode.Nlink == 0){
+			chainFree(fs->fd, data.entry.inode_num);
+			
+		}
+		else{
+			
+			if(pwrite(fs->fd, (void*)(&(data.entry.inode.Nlink)), NLINKSIZE, INDEX(data.entry.inode_num)+NLINKDEX) != NLINKSIZE){
+				perror("failed to decrement Nlink\n");
+				exit(-1);
+			}
+		}
+	}
+
+	return ret;
 }
 
 int mknod(void* args, uint32_t parent_block, const char *name, mode_t new_mode, dev_t new_dev){
+	
 	struct Args *fs = (struct Args*)args;
-	fprintf(stderr, "mknod placeholder\n");
+
+	inodeHead inode;
+	fuse_get_context();
+
+	fprintf(stderr, "!!!mknod placeholder\n");
 	return 0;
 }
 
 int symlink(void* args, uint32_t parent_block, const char *name, const char *link_dest){
-	struct Args *fs = (struct Args*)args;
-	fprintf(stderr, "symlink placeholder\n");
+	//struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "!!!symlink placeholder\n");
 	return 0;
 }
 
 int mkdir(void* args, uint32_t parent_block, const char *name, mode_t new_mode){
-	struct Args *fs = (struct Args*)args;
-	fprintf(stderr, "mkdir placeholder\n");
+	//struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "!!!mkdir placeholder\n");
 	return 0;
 }
 
 int link(void* args, uint32_t parent_block, const char *name, uint32_t dest_block){
-	struct Args *fs = (struct Args*)args;
-	fprintf(stderr, "link placeholder\n");
+	//struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "!!!link placeholder\n");
 	return 0;
 }
 
 int rename(void* args, uint32_t old_parent, const char *old_name, uint32_t new_parent, const char *new_name){
-	struct Args *fs = (struct Args*)args;
+	//struct Args *fs = (struct Args*)args;
 	fprintf(stderr, "rename placeholder\n");
 	return 0;
 }
 
 int truncate(void* args, uint32_t block_num, off_t new_size){
-	struct Args *fs = (struct Args*)args;
-	fprintf(stderr, "truncate placeholder\n");
+	//struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "!!!truncate placeholder\n");
 	return 0;
 }
 
 int write(void* args, uint32_t block_num, const char *buff, size_t wr_len, off_t wr_offset){
-	struct Args *fs = (struct Args*)args;
-	fprintf(stderr, "write placeholder\n");
+	//struct Args *fs = (struct Args*)args;
+	fprintf(stderr, "!!!write placeholder\n");
 	return 0;
 }
 
@@ -587,6 +671,20 @@ struct cpe453fs_ops *CPE453_get_operations(void)
 	ops.readlink = myreadlink;
 	ops.root_node = root_node;
 	ops.set_file_descriptor = set_file_descriptor;
+
+	ops.chmod = chmod;
+	ops.chown = chown;
+	ops.utimens = utimens;
+	ops.rmdir = rmdir;
+	ops.unlink = unlink;
+	ops.mknod = mknod;
+	ops.symlink = symlink;
+	ops.mkdir = mkdir;
+	ops.link = link;
+	ops.rename = rename;
+	ops.truncate = truncate;
+	ops.write = write;
+
 	ops.init = myinit;
 	ops.destroy = mydestroy;
 

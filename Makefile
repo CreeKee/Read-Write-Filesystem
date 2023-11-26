@@ -6,8 +6,8 @@ else
 	OS_DEF=-DLINUX
 	FUSE_LINK=-lfuse -lpthread
 endif
-
-CFLAGS=-Wall -Werror -DDEBUG -g -D_FILE_OFFSET_BITS=64 $(OS_DEF)
+# -Werror
+CFLAGS=-Wall -DDEBUG -g -D_FILE_OFFSET_BITS=64 $(OS_DEF)
 CXXFLAGS=$(CFLAGS)
 
 all: cpe453fs #hello_cpe453fs 
