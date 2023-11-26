@@ -93,13 +93,69 @@ struct dirEntry{
 	inodeHead inode;
 };
 
-class dirData{
+/**************************************************************
+FileCursor
+**************************************************************/
+class FileCursor{
+	public:
+	uint32_t base;
+	uint32_t offset;
 
+	dirEntry readDirEntry(int fd);
+	void moveToExtent(int fd, uint32_t headSize);
+
+	bool atEnd(){return ENDBLOCK(base, offset);}
+
+	FileCursor(uint32_t block_num){base = INDEX(block_num); offset = base+INODESIZE;}
+	FileCursor(){base = 0; offset = 0;}
+};
+
+dirEntry FileCursor::readDirEntry(int fd){
+
+	dirEntry entry;
+
+	dread(fd, &(entry.len), LENSIZE, offset, "failed to read dir entry size\n")
+	else{
+		offset += LENSIZE;
+	}
+
+	if(entry.len != 0){
+		dread(fd, &(entry.inode_num), BNUMSIZE, offset, "failed to read dir entry inode number\n")
+		else{
+			offset += BNUMSIZE;
+		}
+		
+
+		if((entry.name = (char*)calloc(entry.len+1-BNUMSIZE-LENSIZE, sizeof(char))) == NULL){
+			perror("failed to allocate space for dir entry name\n");
+			//fprintf(stderr, "tried to allocate size of %d bytes\n", entry.len+1-BNUMSIZE-LENSIZE);
+			exit(-1);
+		}
+
+		dread(fd, entry.name, entry.len-BNUMSIZE-LENSIZE, offset, "failed to read dir entry name\n")
+		else{
+			offset += entry.len-BNUMSIZE-LENSIZE;
+		}
+	}
+	//fprintf(stderr, "finished reading dir entry and found len %d, inode num %x, and name %s\n",entry.len, entry.inode_num, entry.name);
+	return entry;
+}
+
+void FileCursor::moveToExtent(int fd, uint32_t headSize){
+
+	base = INDEX(getNextCache(fd, base>>BLOCKSHIFT));
+	offset = base + headSize;
+
+}
+
+/**************************************************************
+DirData
+**************************************************************/
+class DirData{
 
 	public:
 	dirEntry entry;
-	uint32_t base;
-	uint32_t offset;
+	FileCursor cursor;
 	uint32_t prev;
 	int fd;
 	inodeHead parentDir;
@@ -107,34 +163,37 @@ class dirData{
 	bool found;
 
 	
-	dirData(int fd, uint32_t block_num, uint32_t parent_block, const char* name);
-	~dirData();
+	DirData(int fd, uint32_t block_num, const char* name);
+	DirData(int fd, uint32_t block_num);
+	~DirData();
 
 	bool nextEntry();
 	bool check(const char* name);
 	void removeDirEntry();
+	void decouple();
 
-	bool exists(){return len != 0;}
+	bool exists(){return found;}
 	bool entryIsEmpty(){return entry.inode.size == 0;}
 	uint16_t entryMode(){return entry.inode.mode;}
 
 	void remove(){
-		removeDirEntry(parentDir.size-entry.len);
+		removeDirEntry();
 		chainFree(fd, entry.inode_num);
 	}
 
+	
+
 };
 
-void dirData::removeDirEntry(){
+void DirData::removeDirEntry(){
 	
 	char remainder[BLOCKSIZE] = {0};
-	uint32_t remaindersize = ((BLOCKSIZE-(offset%BLOCKSIZE)) - entry.len) - BNUMSIZE;
+	uint32_t remaindersize = ((BLOCKSIZE-(cursor.offset%BLOCKSIZE)) - entry.len) - BNUMSIZE;
 
-	uint32_t starset = offset-entry.len
+	uint32_t starset = cursor.offset-entry.len;
 	uint32_t newDirSize = parentDir.size-entry.len;
 
 	//shift remainder of directory data to cover over the deleted entry
-	fprintf(stderr, "reading size of %d at offset %d with base %d\n", remaindersize, offset+size, base);
 	dread(fd, remainder, remaindersize, starset+entry.len, "failed to read dir remainder\n");
 	dwrite(fd, remainder, remaindersize+entry.len, starset, "failed to write dir remainder\n");
 
@@ -142,52 +201,79 @@ void dirData::removeDirEntry(){
 	dwrite(fd, &newDirSize, SIZESIZE, parent_offset+SIZEDEX, "failed to write new dir size\n");
 
 	//check if an extent block has now been emptied and should be freed
-	if(remainder[0] == 0 && offset - base == BNUMSIZE){
-		freeExtentBlock(fd, base, prev);
+	if(remainder[0] == 0 && cursor.offset - cursor.base == BNUMSIZE){
+		freeExtentBlock(fd, cursor.base, prev);
 	}
 }
 
-bool dirData::nextEntry(){
-	entry = readDirEntry(fd, &(offset));
+bool DirData::nextEntry(){
 
-	prev = base;
-	offset = moveToExtent(fd, &(base), DIREXTENTHEADSIZE);
-	dirSize -= (entry.len);
-
-	if(ENDBLOCK(base, offset)){
-		prev = base;
-		offset = moveToExtent(fd, &(base), DIREXTENTHEADSIZE);
+	if(entry.name != NULL){
+		free(entry.name);
 	}
 
-	return base != 0;
+	entry = cursor.readDirEntry(fd);
+
+	if(cursor.atEnd()){
+		prev = cursor.base;
+		cursor.moveToExtent(fd, DIREXTENTHEADSIZE);
+	}
+
+	return cursor.base != 0;
 }
 
-bool dirData::check(const char* name){
+bool DirData::check(const char* name){
 	if(entry.name != NULL && strcmp(name, entry.name) == 0){
-		data.entry.inode = readInode(fd, INDEX(data.entry.inode_num));
+		entry.inode = readInode(fd, INDEX(entry.inode_num));
 		found = true;
-		fprintf(stderr,"found dir entry in parent dir - len: %d name: %s\n", data.entry.len, data.entry.name);
+		fprintf(stderr,"found dir entry in parent dir - len: %d name: %s\n", entry.len, entry.name);
 	}
 }
 
-dirData::dirData(int fd, uint32_t block_num, const char* name){
+void DirData::decouple(){
+	entry.inode.Nlink--;
+
+	if(entry.inode.Nlink == 0){
+			chainFree(fd, entry.inode_num);
+			
+		}
+	else{
+		
+		if(pwrite(fd, (void*)(&(entry.inode.Nlink)), NLINKSIZE, INDEX(entry.inode_num)+NLINKDEX) != NLINKSIZE){
+			perror("failed to decrement Nlink\n");
+			exit(-1);
+		}
+	}
+
+}
+
+DirData::DirData(int fd, uint32_t block_num, const char* name){
 	
-	this.fd = fd;
+	this->fd = fd;
 	parent_offset = INDEX(block_num);
 	parentDir = readInode(fd, INDEX(block_num));
-	base = INDEX(block_num);
-	entry.name = NULL;
-	entry.len = 0;
-	offset = data.base+INODESIZE;
+	cursor = FileCursor(block_num);
 	entry.name = NULL;
 	entry.len = 0;
 	
-	while(this.nextEntry() && !(found = this.check(name)));
+	while(this->nextEntry() && !(found = this->check(name)));
 
 
 }
 
-dirData::~dirData(){
+DirData::DirData(int fd, uint32_t block_num){
+	
+	cursor = FileCursor(block_num);
+	this->fd = fd;
+	parent_offset = INDEX(block_num);
+	parentDir = readInode(fd, INDEX(block_num));
+	entry.name = NULL;
+	entry.len = 0;
+	found = false;
+
+}
+
+DirData::~DirData(){
 	if(entry.name != NULL){
 		free(entry.name);
 	}
@@ -259,47 +345,6 @@ inodeHead readInode(int fd, uint32_t offset){
 	return node;
 }
 
-/*verified*/
-dirEntry readDirEntry(int fd, uint32_t* offset){
-
-	//fprintf(stderr, "reading dir entry at offset %d\n", *offset);
-
-	dirEntry entry;
-
-	dread(fd, &(entry.len), LENSIZE, *offset, "failed to read dir entry size\n")
-	else{
-		*offset += LENSIZE;
-	}
-
-	if(entry.len != 0){
-		dread(fd, &(entry.inode_num), BNUMSIZE, *offset, "failed to read dir entry inode number\n")
-		else{
-			*offset += BNUMSIZE;
-		}
-		
-
-		if((entry.name = (char*)calloc(entry.len+1-BNUMSIZE-LENSIZE, sizeof(char))) == NULL){
-			perror("failed to allocate space for dir entry name\n");
-			//fprintf(stderr, "tried to allocate size of %d bytes\n", entry.len+1-BNUMSIZE-LENSIZE);
-			exit(-1);
-		}
-
-		dread(fd, entry.name, entry.len-BNUMSIZE-LENSIZE, *offset, "failed to read dir entry name\n")
-		else{
-			*offset += entry.len-BNUMSIZE-LENSIZE;
-		}
-	}
-	//fprintf(stderr, "finished reading dir entry and found len %d, inode num %x, and name %s\n",entry.len, entry.inode_num, entry.name);
-	return entry;
-}
-
-/*verified*/
-uint32_t moveToExtent(int fd, uint32_t* base, uint32_t headSize){
-
-	*base = INDEX(getNextCache(fd, *base>>BLOCKSHIFT));
-	return *base+headSize;
-}
-
 void freeBlock(int fd, uint32_t target_offset){
 
 	//initialize free block stack
@@ -338,8 +383,6 @@ void chainFree(int fd, uint32_t start_offset){
 		target_block = getNextCache(fd, target_block);
 	}
 }
-
-
 
 
 /**************************************************************/
@@ -386,31 +429,12 @@ static int mygetattr(void *args, uint32_t block_num, struct stat *stbuf){
 
 /*trusted*/
 static int myreaddir(void *args, uint32_t block_num, void *buf, CPE453_readdir_callback_t cb){
-	//fprintf(stderr, "reading dir at block num %d\n",block_num);
+	
 	struct Args *fs = (struct Args*)args;
-	uint32_t base = INDEX(block_num);
-	inodeHead dirHead = readInode(fs->fd, base);
-	uint32_t offset = base+INODESIZE;
-	dirEntry entry;
-
-	while((signed)dirHead.size > 0){
-
-		entry = readDirEntry(fs->fd, &offset);
-
-		if(entry.len != 0){
-
-			entry.inode = readInode(fs->fd, INDEX(entry.inode_num));
-			
-			cb(buf, entry.name, entry.inode_num);
-			
-			dirHead.size -= (entry.len);
-			free(entry.name);
-		}
-		else{
-			offset = moveToExtent(fs->fd, &base, DIREXTENTHEADSIZE);
-		}
-
-		if(ENDBLOCK(base, offset)) offset = moveToExtent(fs->fd, &base, DIREXTENTHEADSIZE);
+	DirData data(fs->fd, block_num);
+	
+	while(data.nextEntry()){
+		cb(buf, data.entry.name, data.entry.inode_num);
 	}
     return 0;
 }
@@ -434,10 +458,9 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 {
 	//fprintf(stderr, "reading from block %d, size %d, offset %d\n",(int)block_num, (int)size, (int)offset);
 	struct Args *fs = (struct Args*)args;
-	uint32_t base = INDEX(block_num);
-	uint32_t cur;
+	FileCursor cursor(block_num);
 	uint32_t index = 0;
-	//assuming file is properly openend
+
 	inodeHead inode = readInode(fs->fd, INDEX(block_num));
 
 	int32_t delta = std::min((int)size, (int)(inode.size-offset));
@@ -448,20 +471,20 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 		exit(-2);
 	}
 
-	cur = base+INODESIZE;
-
 	while(offset >= metaSize){
-		cur = moveToExtent(fs->fd, &base, FILEEXTENTHEADSIZE);
+		cursor.moveToExtent(fs->fd,FILEEXTENTHEADSIZE);
+		//cur = moveToExtent(fs->fd, &base, FILEEXTENTHEADSIZE);
 		offset -= metaSize;
 		metaSize = BLOCKSIZE - FILEEXTENTHEADSIZE - BNUMSIZE;
 	}
-	cur += offset;
+
+	cursor.offset += offset;
 
 	while(delta > 0){
 
-		metaSize = std::min((int)(BLOCKSIZE + base - cur - BNUMSIZE), (int)delta);
+		metaSize = std::min((int)(BLOCKSIZE + cursor.base - cursor.offset - BNUMSIZE), (int)delta);
 
-		if(pread(fs->fd, buf+index, metaSize, cur) != metaSize){
+		if(pread(fs->fd, buf+index, metaSize, cursor.offset) != metaSize){
 			perror("failed to read from file into buffer");
 			exit(-1);
 		}
@@ -469,7 +492,7 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 		delta -= metaSize;
 		
 
-		if(delta>0) cur = moveToExtent(fs->fd, &base, FILEEXTENTHEADSIZE);
+		if(delta>0) cursor.moveToExtent(fs->fd, FILEEXTENTHEADSIZE);
 	}
 
     return index;
@@ -542,7 +565,7 @@ int rmdir(void* args, uint32_t block_num, const char *name){
 
 	struct Args *fs = (struct Args*)args;
 	
-	dirData data(fs->fd, block_num, name);
+	DirData data(fs->fd, block_num, name);
 	int ret = -1;
 
 	if(!data.found){
@@ -569,36 +592,24 @@ int rmdir(void* args, uint32_t block_num, const char *name){
 int unlink(void* args, uint32_t block_num, const char *name){
 	
 	struct Args *fs = (struct Args*)args;
-	inodeHead dirHead = readInode(fs->fd, INDEX(block_num));
-	dirData data = searchDir(fs->fd, block_num, name);
+	DirData data(fs->fd, block_num, name);
 	int ret = -1;
 
-	if(data.entry.len == 0){
+	if(!data.found){
 
 		errno = ENOENT;
 
-	} else if(S_ISDIR(data.entry.inode.mode)){
+	} else if(S_ISDIR(data.entryMode())){
 
 		errno = EISDIR;
 
 	}
 	else{
 		//TODO check perms? 
-		removeDirEntry(fs->fd, INDEX(block_num), data.base, data.offset-data.entry.len, data.entry.len, dirHead.size-data.entry.len, data.prev);
-		data.entry.inode.Nlink--;
+		data.remove();
+		data.decouple();
+		
 		ret = 0;
-
-		if(data.entry.inode.Nlink == 0){
-			chainFree(fs->fd, data.entry.inode_num);
-			
-		}
-		else{
-			
-			if(pwrite(fs->fd, (void*)(&(data.entry.inode.Nlink)), NLINKSIZE, INDEX(data.entry.inode_num)+NLINKDEX) != NLINKSIZE){
-				perror("failed to decrement Nlink\n");
-				exit(-1);
-			}
-		}
 	}
 
 	return ret;
