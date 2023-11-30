@@ -80,8 +80,9 @@
 	entry.len = strlen(name)+SIZESIZE+BNUMSIZE;\
 }
 
-#define DEBUG 1
-#define DBG(msg) fprintf(stderr, "~~~%s~~~\n",msg);
+#define PDBG 1
+#define DBG(msg) if(PDBG) fprintf(stderr, "~~~%s~~~\n",msg);
+#define CBG(msg) if(PDBG) fprintf(stderr, "_%s\n",msg);
 /**************************************************************
 structs
 **************************************************************/
@@ -136,25 +137,29 @@ class Cache{
 	inline void setNext(uint32_t cur_block_num, uint32_t next_block_num);
 	inline void setNext(int fd, uint32_t cur_block_num, uint32_t next_block_num);
 	inline void setNextFree(int fd, uint32_t cur_block_num, uint32_t next_block_num);
+	void release(int fd, uint32_t block_num);
 
 	uint32_t getNewBlock(int fd, void* buff, uint32_t headsize, bool purge);
 };
 
 uint32_t Cache::getNewBlock(int fd, void* buff, uint32_t headsize, bool purge){
+	
 	uint8_t* cleanse;
 	uint32_t bnum = getNext(fd, 0);
 	setNext(fd, 0, getNextFree(fd, bnum));
 	setNext(fd, bnum, 0);
+	
+	if(bnum != 0){ 
+		if(PDBG) fprintf(stderr, "_writing new head to block num %d\n",bnum);
+		dwrite(fd, buff, headsize, INDEX(bnum), "failed to write block head when making block\n");
 
-	fprintf(stderr, "_writing new head to block num %d\n",bnum);
-	dwrite(fd, buff, headsize, INDEX(bnum), "failed to write block head when making block\n");
-
-	if(purge){
-		cleanse = (uint8_t*)calloc(sizeof(uint8_t), BLOCKSIZE-BNUMSIZE-headsize);
-		dwrite(fd, cleanse, BLOCKSIZE-BNUMSIZE-headsize, INDEX(bnum)+headsize, "failed to write inode head when making node\n");
-		free(cleanse);
+		if(purge){
+			cleanse = (uint8_t*)calloc(sizeof(uint8_t), BLOCKSIZE-BNUMSIZE-headsize);
+			dwrite(fd, cleanse, BLOCKSIZE-BNUMSIZE-headsize, INDEX(bnum)+headsize, "failed to write inode head when making node\n");
+			free(cleanse);
+		}
+		if(PDBG) fprintf(stderr, "_got new block, number: %d\n",bnum);
 	}
-	fprintf(stderr, "_got new block, number: %d\n",bnum);
 	return bnum;
 }
 
@@ -180,40 +185,47 @@ inline void Cache::expandCache(){
 inline uint32_t Cache::getNext(int fd, uint32_t block_num){
 
 	uint32_t mru = -1;
-	fprintf(stderr, "_cache value at %d = %d\n", block_num, nextcache[block_num]);
+	if(PDBG) fprintf(stderr, "_cache value at %d = %d\n", block_num, nextcache[block_num]);
+	
 	if(block_num >= bmsize){
 		expandCache();
 	}
 
 	if((signed)(mru = nextcache[block_num]) == -1){
-		fprintf(stderr, "_reading new value into cache\n");
+		if(PDBG) fprintf(stderr, "_reading new value into cache\n");
 		dread(fd, &(nextcache[block_num]), BNUMSIZE, INDEX(block_num)+BLOCKSIZE-BNUMSIZE, "failed to read value into cache");
 		mru = nextcache[block_num];
-		fprintf(stderr, "_value was %d\n",nextcache[block_num]);
+		if(PDBG) fprintf(stderr, "_value is now %d\n",nextcache[block_num]);
 	}
+	/*
+		if(block_num == 0 && nextcache[block_num]==0){
+			exit(-1);
+		}
+		*/
+
 	return mru;
 }
 
 inline uint32_t Cache::getNextFree(int fd, uint32_t block_num){
 
 	uint32_t mru = -1;
-	fprintf(stderr, "_cache value at %d = %d\n", block_num, nextcache[block_num]);
+	if(PDBG) fprintf(stderr, "_cache value at %d = %d\n", block_num, nextcache[block_num]);
 	if(block_num >= bmsize){
 		expandCache();
 	}
 
 	if((signed)(mru = nextcache[block_num]) == -1){
-		fprintf(stderr, "_reading new value into cache\n");
+		if(PDBG) fprintf(stderr, "_reading new value into cache\n");
 		dread(fd, &(nextcache[block_num]), BNUMSIZE, INDEX(block_num)+BNUMSIZE, "failed to read value into cache");
 		mru = nextcache[block_num];
-		fprintf(stderr, "_value was %d\n",nextcache[block_num]);
+		if(PDBG) fprintf(stderr, "_value was %d\n",nextcache[block_num]);
 	}
 	return mru;
 }
 
 inline void Cache::setNext(uint32_t cur_block_num, uint32_t next_block_num){
-	fprintf(stderr, "_set next of %d to %d",cur_block_num, next_block_num );
-	if(cur_block_num >= BLOCKSIZE){
+	if(PDBG) fprintf(stderr, "_set next of %d to %d",cur_block_num, next_block_num );
+	if(cur_block_num >= bmsize){
 		expandCache();
 	}
 	nextcache[cur_block_num] = next_block_num;
@@ -221,8 +233,8 @@ inline void Cache::setNext(uint32_t cur_block_num, uint32_t next_block_num){
 }
 
 inline void Cache::setNext(int fd, uint32_t cur_block_num, uint32_t next_block_num){
-	fprintf(stderr, "_set next with wb of %d to %d\n",cur_block_num, next_block_num);
-	if(cur_block_num >= BLOCKSIZE){
+	if(PDBG) fprintf(stderr, "_set next with wb of %d to %d\n",cur_block_num, next_block_num);
+	if(cur_block_num >= bmsize){
 		expandCache();
 	}
 	nextcache[cur_block_num] = next_block_num;
@@ -232,13 +244,31 @@ inline void Cache::setNext(int fd, uint32_t cur_block_num, uint32_t next_block_n
 }
 
 inline void Cache::setNextFree(int fd, uint32_t cur_block_num, uint32_t next_block_num){
-	fprintf(stderr, "_set next with wb of %d to %d\n",cur_block_num, next_block_num);
-	if(cur_block_num >= BLOCKSIZE){
+	
+	uint32_t zbuf = 0;
+	
+	if(PDBG) fprintf(stderr, "_set next (free) with wb of %d to %d\n",cur_block_num, next_block_num);
+	if(cur_block_num >= bmsize){
 		expandCache();
 	}
 	nextcache[cur_block_num] = next_block_num;
 
 	dwrite(fd, (void*)(&next_block_num), BNUMSIZE, INDEX(cur_block_num)+BNUMSIZE, "failed to write next block num\n");
+	dwrite(fd, (void*)(&zbuf), BNUMSIZE, INDEX(cur_block_num)+BLOCKSIZE-BNUMSIZE, "failed to write next block num\n");
+}
+
+void Cache::release(int fd, uint32_t block_num){
+	//initialize free block stack
+	uint32_t free_num_buff = FREE_NUM;
+
+	//free targeted block
+	dwrite(fd, (void*)(&free_num_buff), BNUMSIZE, INDEX(block_num), "failed to write continuing block num");
+
+	//point free block towards free list
+	setNextFree(fd, block_num, getNext(fd, 0));
+
+	//update next free block in both cache and super block
+	setNext(fd, 0, block_num);
 
 }
 
@@ -258,29 +288,15 @@ inodeHead readInode(int fd, uint32_t offset){
 	return node;
 }
 
-void freeBlock(int fd, uint32_t target_offset){
+void chainFree(int fd, uint32_t start_block){
 
-	//initialize free block stack
-	uint32_t free_num_buff = FREE_NUM;
-
-	//free targeted block
-	dwrite(fd, (void*)(&free_num_buff), BNUMSIZE, target_offset, "failed to write continuing block num");
-
-	//point free block towards free list
-	ncache.setNextFree(fd, target_offset>>BLOCKSHIFT, ncache.getNext(fd, 0));
-
-	//update next free block in both cache and super block
-	ncache.setNext(fd, 0, target_offset >> BLOCKSHIFT);
-
-}
-
-void chainFree(int fd, uint32_t start_offset){
-
-	uint32_t target_block = start_offset>>BLOCKSHIFT;
+	uint32_t target_block = start_block;
+	uint32_t next_target;
 
 	while(target_block != 0){
-		freeBlock(fd, INDEX(target_block));
-		target_block = ncache.getNext(fd, target_block);
+		next_target = ncache.getNext(fd, target_block);
+		ncache.release(fd, target_block);
+		target_block = next_target;
 	}
 }
 
@@ -301,7 +317,6 @@ class FileCursor{
 	dirEntry readDirEntry(int fd);
 	void moveToExtent(int fd, uint32_t headSize);
 	bool atEnd(){return ENDBLOCK(base, offset);}
-	void freeExtentBlock(int fd);
 
 	FileCursor(uint32_t block_num){base = INDEX(block_num); offset = base+INODESIZE; prev = 0;}
 	FileCursor(){base = 0; offset = 0; prev = 0;}
@@ -349,18 +364,7 @@ void FileCursor::moveToExtent(int fd, uint32_t headSize){
 
 }
 
-void FileCursor::freeExtentBlock(int fd){
-	
-	//get address of next block in the chain
-	uint32_t num = ncache.getNext(fd, base>>BLOCKSHIFT);
 
-	//connect previous block to next block
-	dwrite(fd, (void*)(&num), BNUMSIZE, prev+BLOCKSIZE-BNUMSIZE, "failed to write continuing block num");
-	ncache.setNext(prev>>BLOCKSHIFT, num);
-
-	//free the target block
-	freeBlock(fd, base);
-}
 
 /**************************************************************
 DirData
@@ -409,7 +413,9 @@ void DirData::removeDirEntry(){
 	uint32_t remaindersize = ((BLOCKSIZE-(cursor.offset%BLOCKSIZE)) - entry.len) - BNUMSIZE;
 
 	uint32_t starset = cursor.offset-entry.len;
-	uint32_t newDirSize = parentDir.size-entry.len;
+	uint64_t newDirSize = parentDir.size-entry.len;
+
+	uint32_t nextnum;
 
 	//shift remainder of directory data to cover over the deleted entry
 	dread(fd, remainder, remaindersize, starset+entry.len, "failed to read dir remainder\n");
@@ -420,7 +426,13 @@ void DirData::removeDirEntry(){
 
 	//check if an extent block has now been emptied and should be freed
 	if(remainder[0] == 0 && cursor.offset - cursor.base == BNUMSIZE){
-		cursor.freeExtentBlock(fd);
+
+		nextnum = ncache.getNext(fd, cursor.base >> BLOCKSHIFT);
+		ncache.release(fd, cursor.base >> BLOCKSHIFT);
+		
+		//connect previous block to next block
+		ncache.setNext(fd, cursor.prev>>BLOCKSHIFT, nextnum);
+
 	}
 }
 
@@ -439,7 +451,7 @@ bool DirData::nextEntry(){
 	else if(cursor.atEnd()){
 		cursor.moveToExtent(fd, DIREXTENTHEADSIZE);
 	}
-	fprintf(stderr, "got next entry, base at: %d, name: %s\n", cursor.base, entry.name);
+	//if(PDBG) fprintf(stderr, "got next entry, base at: %d, name: %s\n", cursor.base, entry.name);
 	return cursor.base != 0;
 }
 
@@ -447,7 +459,7 @@ bool DirData::check(const char* name){
 	if(entry.name != NULL && strcmp(name, entry.name) == 0){
 		updateEntryInode();
 		
-		fprintf(stderr,"found dir entry in parent dir - len: %d name: %s\n", entry.len, entry.name);
+		if(PDBG) fprintf(stderr,"found dir entry in parent dir - len: %d name: %s\n", entry.len, entry.name);
 		return true;
 	}
 	return false;
@@ -456,6 +468,7 @@ bool DirData::check(const char* name){
 void DirData::decouple(){
 
 	entry.inode.Nlink--;
+	if(PDBG) fprintf(stderr, "Nlink count is now: %d\n", (int)(entry.inode.Nlink));
 
 	if(entry.inode.Nlink == 0){
 			chainFree(fd, entry.inode_num);	
@@ -480,7 +493,6 @@ bool DirData::insertEntry(dirEntry entry){
 	while(!inserted && cursor.base != 0){
 		
 		curE = cursor.readDirEntry(fd);
-		fprintf(stderr, "curE.len = %d\n", curE.len);
 		if(curE.len == 0){
 			
 			//check if enough space
@@ -528,7 +540,7 @@ void DirData::writeInsert(dirEntry entry){
 	*((uint32_t*)(buffer+2)) = entry.inode_num;
 	memcpy(buffer+6, entry.name, entry.len - LENSIZE - BNUMSIZE);
 	
-	fprintf(stderr, "inserting new entry len: %d inode_num: %d name: %s\n",*((uint16_t*)buffer),*((uint32_t*)(buffer+2)), buffer+6);
+	if(PDBG) fprintf(stderr, "inserting new entry len: %d inode_num: %d name: %s\n",*((uint16_t*)buffer),*((uint32_t*)(buffer+2)), buffer+6);
 	
 	dwrite(fd, buffer, entry.len, cursor.offset-LENSIZE, "failed to insert dir entry");
 	free(buffer);
@@ -574,10 +586,10 @@ DirData::DirData(int fd, uint32_t parent_block_num, dirEntry entry){
 	found = entry.len < MAXDIRENTRYSIZE;
 
 	if(found){
-		fprintf(stderr, "-------inserting entry into dir----------- %s\n",entry.name);
+		if(PDBG) fprintf(stderr, "-------inserting entry into dir----------- %s\n",entry.name);
 		if(!insertEntry(entry)){
 			found = false;
-			fprintf(stderr, "could not insert entry\n");
+			if(PDBG) fprintf(stderr, "could not insert entry\n");
 		
 		}
 	}
@@ -593,8 +605,6 @@ DirData::~DirData(){
 		//free(entry.name);
 	}
 }
-
-
 
 /**************************************************************/
 /*Read only functions*/
@@ -650,7 +660,6 @@ static int myreaddir(void *args, uint32_t block_num, void *buf, CPE453_readdir_c
 	DirData data(fs->fd, block_num);
 	
 	while(data.nextEntry()){
-		fprintf(stderr, "calling cb\n");
 		cb(buf, data.entry.name, data.entry.inode_num);
 	}
     return 0;
@@ -790,7 +799,6 @@ int utimens(void* args, uint32_t block_num, const struct timespec tv[2]){
 int rmdir(void* args, uint32_t block_num, const char *name){
 
 	DBG("calling rmdir");
-
 	struct Args *fs = (struct Args*)args;
 	
 	DirData data(fs->fd, block_num, name);
@@ -809,7 +817,7 @@ int rmdir(void* args, uint32_t block_num, const char *name){
 		ret = 0;
 	}
 	else{
-		fprintf(stderr,"-> when deleting dir: data.entry.inode.size == %d\n", (int)data.entry.inode.size);
+		if(PDBG) fprintf(stderr,"-> when deleting dir: data.entry.inode.size == %d\n", (int)data.entry.inode.size);
 		errno = ENOTEMPTY;
 				
 	}
@@ -820,7 +828,6 @@ int rmdir(void* args, uint32_t block_num, const char *name){
 int unlink(void* args, uint32_t block_num, const char *name){
 	
 	DBG("calling unlink");
-
 	struct Args *fs = (struct Args*)args;
 	DirData data(fs->fd, block_num, name);
 	int ret = -1;
@@ -836,7 +843,7 @@ int unlink(void* args, uint32_t block_num, const char *name){
 	}
 	else{
 		//TODO check perms? 
-		data.remove();
+		data.removeDirEntry();
 		data.decouple();
 		
 		ret = 0;
@@ -853,16 +860,22 @@ int mknod(void* args, uint32_t parent_block, const char *name, mode_t new_mode, 
 	inodeHead inode;
 	dirEntry entry;
 	fuse_context* cntxt = fuse_get_context();
-	uint32_t bnum = ncache.getNewBlock(fs->fd, (void*)(&inode), INODESIZE, false);
+	uint32_t bnum;
+	int ret = -1;
 
 	FILLINODE(new_mode, 0);
-	FILLENTRY;
 	
-	dwrite(fs->fd, &inode, INODESIZE, 0, "failed to write inode to new node\n");
+	//dwrite(fs->fd, &inode, INODESIZE, 0, "failed to write inode to new node\n");
 
-	DirData dir(fs->fd, parent_block, entry);
+	if((bnum = ncache.getNewBlock(fs->fd, (void*)(&inode), INODESIZE, false))!= 0){
+		
+		FILLENTRY;
+		DirData dir(fs->fd, parent_block, entry);
+		if(dir.found) ret = 0;
+	}
+	
 
-	return 0;
+	return ret;
 }
 
 int symlink(void* args, uint32_t parent_block, const char *name, const char *link_dest){
@@ -873,17 +886,25 @@ int symlink(void* args, uint32_t parent_block, const char *name, const char *lin
 	inodeHead inode;
 	dirEntry entry;
 	fuse_context* cntxt = fuse_get_context();
-	uint32_t bnum = ncache.getNewBlock(fs->fd, (void*)(&inode), INODESIZE, false);
+	uint32_t bnum;
+	int ret = -1;
 
 	FILLINODE(S_IFLNK, strlen(link_dest));
-	FILLENTRY;
+	//dwrite(fs->fd, &inode, INODESIZE, INDEX(bnum), "failed to write inode to new node\n");
+	if((bnum = ncache.getNewBlock(fs->fd, (void*)(&inode), INODESIZE, false)) != 0){
+
+		
+		FILLENTRY;
+
+		DirData dir(fs->fd, parent_block, entry);
+		if(dir.found){
+			dwrite(fs->fd, link_dest, (unsigned)strlen(link_dest), INDEX(bnum)+INODESIZE, "failed to write symlink data");
+			ret = 0;
+		}
+	}
 	
-	dwrite(fs->fd, &inode, INODESIZE, INDEX(bnum), "failed to write inode to new node\n");
-	dwrite(fs->fd, link_dest, (unsigned)strlen(link_dest), INDEX(bnum)+INODESIZE, "failed to write symlink data");
 
-	DirData dir(fs->fd, parent_block, entry);
-
-	return 0;
+	return ret;
 }
 
 int mkdir(void* args, uint32_t parent_block, const char *name, mode_t new_mode){
@@ -935,7 +956,7 @@ int link(void* args, uint32_t parent_block, const char *name, uint32_t dest_bloc
 	
 	if(dir.found){
 		inode = readInode(fs->fd, INDEX(dest_block));
-		inode.Nlink+=1;
+		inode.Nlink += 1;
 		dwrite(fs->fd, &(inode.Nlink), NLINKSIZE, INDEX(dest_block)+NLINKDEX, "failed to update nlink after linking\n");
 		ret = 0;
 	}
@@ -967,7 +988,7 @@ int rename(void* args, uint32_t old_parent, const char *old_name, uint32_t new_p
 		memcpy(oldentry.name, new_name, strlen(new_name)+1);
 		oldentry.len = strlen(new_name)+1 + BNUMSIZE + SIZESIZE;
 
-		data.remove();
+		data.removeDirEntry();
 
 		data = DirData(fs->fd, new_parent, oldentry);
 
@@ -982,9 +1003,10 @@ int rename(void* args, uint32_t old_parent, const char *old_name, uint32_t new_p
 	return ret;
 }
 
+//FIXME
 int truncate(void* args, uint32_t block_num, off_t new_size){
-	
 	DBG("calling truncate");
+	
 	
 	struct Args *fs = (struct Args*)args;
 	dwrite(fs->fd, &(new_size), SIZESIZE, INDEX(block_num)+SIZEDEX, "truncation failed\n");
@@ -994,36 +1016,51 @@ int truncate(void* args, uint32_t block_num, off_t new_size){
 int mywrite(void* args, uint32_t block_num, const char *buff, size_t wr_len, off_t wr_offset){
 	
 	DBG("calling mywrite");
+	fprintf(stderr, "--->wr_len %d, wr_offset %d\n", wr_len, wr_offset);
 
 	struct Args *fs = (struct Args*)args;
 	FileCursor cursor(block_num);
 	uint32_t index = 0;
 	uint32_t bnum = 0;
-	uint64_t extentHead = ((uint64_t)EXTENT_NUM<<32)|((uint64_t)block_num);
+	uint64_t extentHead = ((uint64_t)EXTENT_NUM)|((uint64_t)block_num<<32);
 	int32_t delta = wr_len;
 	uint32_t metaSize = BLOCKSIZE - INODESIZE - BNUMSIZE;
 	inodeHead inode = readInode(fs->fd, INDEX(block_num));
 	uint32_t upsize = 0;
+	uint32_t oldend = 0;
 
 	if(delta < 0){
 		//TODO error
 		exit(-2);
 	}
 
+
 	while(wr_offset >= metaSize){
+
+		//move to next extent block
 		cursor.moveToExtent(fs->fd,FILEEXTENTHEADSIZE);
 		
-		//cur = moveToExtent(fs->fd, &base, FILEEXTENTHEADSIZE);
+		//adjust offset relative to movement
 		wr_offset -= metaSize;
+
+		//update potential new size
 		upsize += metaSize;
+
+
 		metaSize = BLOCKSIZE - FILEEXTENTHEADSIZE - BNUMSIZE;
+
 		if(cursor.base == 0){
+
 			//get next extent block
 			if((bnum = ncache.getNewBlock(fs->fd, &extentHead, FILEEXTENTHEADSIZE, false)) != 0){
-				ncache.setNext(fs->fd, cursor.prev, bnum);
+				
+				//set new block at end of the chain
+				ncache.setNext(fs->fd, cursor.prev>>BLOCKSHIFT, bnum);
 
-				//write entry to new block
+				//update cursor
+				oldend = cursor.base;
 				cursor = FileCursor(bnum);
+				cursor.prev = oldend;
 			}
 			else{
 				metaSize = 0;
@@ -1050,13 +1087,19 @@ int mywrite(void* args, uint32_t block_num, const char *buff, size_t wr_len, off
 			cursor.moveToExtent(fs->fd, FILEEXTENTHEADSIZE);
 		}
 
+
 		if(cursor.base == 0){
+
 			//get next extent block
 			if((bnum = ncache.getNewBlock(fs->fd, &extentHead, FILEEXTENTHEADSIZE, false)) != 0){
-				ncache.setNext(fs->fd, cursor.prev, bnum);
+				
+				//set new block at end of the chain
+				ncache.setNext(fs->fd, cursor.prev >> BLOCKSHIFT, bnum);
 
-				//write entry to new block
+				//update cursor
+				oldend = cursor.base;
 				cursor = FileCursor(bnum);
+				cursor.prev = oldend;
 			}
 			else{
 				delta = 0;
@@ -1066,10 +1109,8 @@ int mywrite(void* args, uint32_t block_num, const char *buff, size_t wr_len, off
 	}
 
 	inode.size = std::max((int)(upsize+index),(int)(inode.size));
-	fprintf(stderr, "--->inode size should now be %d\n");
 	dwrite(fs->fd, &(inode.size), SIZESIZE, SIZEDEX+INDEX(block_num), "failed to update size after writing");
 
-	fprintf(stderr, "\nwrote %d bytes\n\n", index);
     return index;
 
 }
@@ -1114,4 +1155,3 @@ struct cpe453fs_ops *CPE453_get_operations(void)
 #ifdef  __cplusplus
 }
 #endif
-

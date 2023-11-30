@@ -31,3 +31,4 @@ run:
 	fusermount -u /tmp/skiefer/mnt
 	make
 	./cpe453fs -s -d /tmp/skiefer/mnt customFS.fs
+#1952
