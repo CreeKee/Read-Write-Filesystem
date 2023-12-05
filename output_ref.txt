@@ -1,0 +1,770 @@
+configure: creating cache auto/config.cache
+checking whether make sets $(MAKE)... yes
+checking for gcc... gcc
+checking for C compiler default output file name... a.out
+checking whether the C compiler works... yes
+checking whether we are cross compiling... no
+checking for suffix of executables... 
+checking for suffix of object files... o
+checking whether we are using the GNU C compiler... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to accept ANSI C... none needed
+checking how to run the C preprocessor... gcc -E
+checking for egrep... grep -E
+checking for library containing strerror... none required
+checking for gawk... gawk
+checking for strip... strip
+configure: checking for buggy tools...
+- sh is 'GNU bash, version 4.2.46(2)-release (x86_64-redhat-linux-gnu)
+Copyright (C) 2011 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+
+This is free software; you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.' - probably OK.
+checking for BeOS... no
+checking for QNX... no
+checking for Darwin (Mac OS X)... no
+checking --with-vim-name argument... Defaulting to vim
+checking --with-ex-name argument... Defaulting to ex
+checking --with-view-name argument... Defaulting to view
+checking --with-global-runtime argument... no
+checking --with-modified-by argument... no
+checking if character set is EBCDIC... no
+checking --with-features argument... Defaulting to normal
+checking --with-compiledby argument... no
+checking --disable-xsmp argument... no
+checking --disable-xsmp-interact argument... no
+checking --enable-mzschemeinterp argument... no
+checking --enable-perlinterp argument... no
+checking --enable-pythoninterp argument... no
+checking --enable-tclinterp argument... no
+checking --enable-rubyinterp argument... no
+checking --enable-cscope argument... no
+checking --enable-workshop argument... no
+checking --disable-netbeans argument... no
+checking for socket in -lsocket... no
+checking for gethostbyname in -lnsl... yes
+checking whether compiling netbeans integration is possible... yes
+checking --enable-sniff argument... no
+checking --enable-multibyte argument... no
+checking --enable-hangulinput argument... no
+checking --enable-xim argument... defaulting to auto
+checking --enable-fontset argument... no
+checking for xmkmf... /bin/xmkmf
+checking for X... no
+checking if X11 header files can be found... yes
+checking --enable-gui argument... no GUI support
+checking X11/SM/SMlib.h usability... yes
+checking X11/SM/SMlib.h presence... yes
+checking for X11/SM/SMlib.h... yes
+checking quality of toupper... good
+checking whether __DATE__ and __TIME__ work... yes
+checking elf.h usability... yes
+checking elf.h presence... yes
+checking for elf.h... yes
+checking for main in -lelf... no
+checking for dirent.h that defines DIR... yes
+checking for library containing opendir... none required
+checking for ANSI C header files... yes
+checking for sys/wait.h that is POSIX.1 compatible... yes
+checking stdarg.h usability... yes
+checking stdarg.h presence... yes
+checking for stdarg.h... yes
+checking stdlib.h usability... yes
+checking stdlib.h presence... yes
+checking for stdlib.h... yes
+checking string.h usability... yes
+checking string.h presence... yes
+checking for string.h... yes
+checking sys/select.h usability... yes
+checking sys/select.h presence... yes
+checking for sys/select.h... yes
+checking sys/utsname.h usability... yes
+checking sys/utsname.h presence... yes
+checking for sys/utsname.h... yes
+checking termcap.h usability... yes
+checking termcap.h presence... yes
+checking for termcap.h... yes
+checking fcntl.h usability... yes
+checking fcntl.h presence... yes
+checking for fcntl.h... yes
+checking sgtty.h usability... yes
+checking sgtty.h presence... yes
+checking for sgtty.h... yes
+checking sys/ioctl.h usability... yes
+checking sys/ioctl.h presence... yes
+checking for sys/ioctl.h... yes
+checking sys/time.h usability... yes
+checking sys/time.h presence... yes
+checking for sys/time.h... yes
+checking termio.h usability... yes
+checking termio.h presence... yes
+checking for termio.h... yes
+checking iconv.h usability... yes
+checking iconv.h presence... yes
+checking for iconv.h... yes
+checking langinfo.h usability... yes
+checking langinfo.h presence... yes
+checking for langinfo.h... yes
+checking unistd.h usability... yes
+checking unistd.h presence... yes
+checking for unistd.h... yes
+checking stropts.h usability... no
+checking stropts.h presence... no
+checking for stropts.h... no
+checking errno.h usability... yes
+checking errno.h presence... yes
+checking for errno.h... yes
+checking sys/resource.h usability... yes
+checking sys/resource.h presence... yes
+checking for sys/resource.h... yes
+checking sys/systeminfo.h usability... no
+checking sys/systeminfo.h presence... no
+checking for sys/systeminfo.h... no
+checking locale.h usability... yes
+checking locale.h presence... yes
+checking for locale.h... yes
+checking sys/stream.h usability... no
+checking sys/stream.h presence... no
+checking for sys/stream.h... no
+checking sys/ptem.h usability... no
+checking sys/ptem.h presence... no
+checking for sys/ptem.h... no
+checking termios.h usability... yes
+checking termios.h presence... yes
+checking for termios.h... yes
+checking libc.h usability... no
+checking libc.h presence... no
+checking for libc.h... no
+checking sys/statfs.h usability... yes
+checking sys/statfs.h presence... yes
+checking for sys/statfs.h... yes
+checking poll.h usability... yes
+checking poll.h presence... yes
+checking for poll.h... yes
+checking sys/poll.h usability... yes
+checking sys/poll.h presence... yes
+checking for sys/poll.h... yes
+checking pwd.h usability... yes
+checking pwd.h presence... yes
+checking for pwd.h... yes
+checking utime.h usability... yes
+checking utime.h presence... yes
+checking for utime.h... yes
+checking sys/param.h usability... yes
+checking sys/param.h presence... yes
+checking for sys/param.h... yes
+checking libintl.h usability... yes
+checking libintl.h presence... yes
+checking for libintl.h... yes
+checking libgen.h usability... yes
+checking libgen.h presence... yes
+checking for libgen.h... yes
+checking util/debug.h usability... no
+checking util/debug.h presence... no
+checking for util/debug.h... no
+checking util/msg18n.h usability... no
+checking util/msg18n.h presence... no
+checking for util/msg18n.h... no
+checking frame.h usability... no
+checking frame.h presence... no
+checking for frame.h... no
+checking sys/acl.h usability... no
+checking sys/acl.h presence... no
+checking for sys/acl.h... no
+checking sys/access.h usability... no
+checking sys/access.h presence... no
+checking for sys/access.h... no
+checking sys/sysctl.h usability... yes
+checking sys/sysctl.h presence... yes
+checking for sys/sysctl.h... yes
+checking sys/sysinfo.h usability... yes
+checking sys/sysinfo.h presence... yes
+checking for sys/sysinfo.h... yes
+checking wchar.h usability... yes
+checking wchar.h presence... yes
+checking for wchar.h... yes
+checking wctype.h usability... yes
+checking wctype.h presence... yes
+checking for wctype.h... yes
+checking for pthread_np.h... no
+checking strings.h usability... yes
+checking strings.h presence... yes
+checking for strings.h... yes
+checking if strings.h can be included after string.h... yes
+checking whether gcc needs -traditional... no
+checking for an ANSI C-conforming const... yes
+checking for mode_t... yes
+checking for off_t... yes
+checking for pid_t... yes
+checking for size_t... yes
+checking for uid_t in sys/types.h... yes
+checking whether time.h and sys/time.h may both be included... yes
+checking for ino_t... yes
+checking for dev_t... yes
+checking for rlim_t... yes
+checking for stack_t... yes
+checking whether stack_t has an ss_base field... no
+checking --with-tlib argument... empty: automatic terminal library selection
+checking for tgetent in -lncurses... yes
+checking whether we talk terminfo... yes -- terminfo spoken here
+checking what tgetent() returns for an unknown terminal... zero
+checking whether termcap.h contains ospeed... yes
+checking whether termcap.h contains UP, BC and PC... yes
+checking whether tputs() uses outfuntype... no
+checking whether sys/select.h and sys/time.h may both be included... yes
+checking for /dev/ptc... no
+checking for SVR4 ptys... yes
+checking for ptyranges... don't know
+checking default tty permissions/group... pty mode: 0620, group: 5
+checking return type of signal handlers... void
+checking for struct sigcontext... yes
+checking getcwd implementation... it is usable
+checking for bcmp... yes
+checking for fchdir... yes
+checking for fchown... yes
+checking for fseeko... yes
+checking for fsync... yes
+checking for ftello... yes
+checking for getcwd... yes
+checking for getpseudotty... no
+checking for getpwnam... yes
+checking for getpwuid... yes
+checking for getrlimit... yes
+checking for gettimeofday... yes
+checking for getwd... yes
+checking for lstat... yes
+checking for memcmp... yes
+checking for memset... yes
+checking for nanosleep... yes
+checking for opendir... yes
+checking for putenv... yes
+checking for qsort... yes
+checking for readlink... yes
+checking for select... yes
+checking for setenv... yes
+checking for setpgid... yes
+checking for setsid... yes
+checking for sigaltstack... yes
+checking for sigstack... yes
+checking for sigset... yes
+checking for sigsetjmp... no
+checking for sigaction... yes
+checking for sigvec... yes
+checking for strcasecmp... yes
+checking for strerror... yes
+checking for strftime... yes
+checking for stricmp... no
+checking for strncasecmp... yes
+checking for strnicmp... no
+checking for strpbrk... yes
+checking for strtol... yes
+checking for tgetent... yes
+checking for towlower... yes
+checking for towupper... yes
+checking for iswupper... yes
+checking for usleep... yes
+checking for utime... yes
+checking for utimes... yes
+checking for st_blksize... yes
+checking whether stat() ignores a trailing slash... no
+checking for iconv_open()... yes
+checking for nl_langinfo(CODESET)... yes
+checking --disable-acl argument... no
+checking for acl_get_file in -lposix1e... no
+checking for acl_get_file in -lacl... no
+checking for POSIX ACL support... no
+checking for Solaris ACL support... no
+checking for AIX ACL support... no
+checking --disable-gpm argument... no
+checking for gpm... no
+checking for rename... yes
+checking for sysctl... not usable
+checking for sysinfo... yes
+checking for sysinfo.mem_unit... yes
+checking for sysconf... yes
+checking size of int... 4
+checking whether memmove/bcopy/memcpy handle overlaps... memmove does
+checking for _xpg4_setrunelocale in -lxpg4... no
+checking how to create tags... ctags -I INIT+ --fields=+S
+checking how to run man with a section nr... man -s
+checking --disable-nls argument... no
+checking for msgfmt... msgfmt
+checking for NLS... no "po/Makefile" - disabled
+checking dlfcn.h usability... yes
+checking dlfcn.h presence... yes
+checking for dlfcn.h... yes
+checking for dlopen()... no
+checking for dlopen() in -ldl... yes
+checking for dlsym()... yes
+checking setjmp.h usability... yes
+checking setjmp.h presence... yes
+checking for setjmp.h... yes
+checking for GCC 3 or later... yes
+updating cache auto/config.cache
+configure: creating auto/config.status
+config.status: creating auto/config.mk
+config.status: creating auto/config.h
+Starting make in the src directory.
+If there are problems, cd to the src directory and run make there
+cd src && make first
+make[1]: Entering directory `/tmp/skiefer/mnt/vim71/src'
+mkdir objects
+CC="gcc -Iproto -DHAVE_CONFIG_H   -I/usr/local/include        " srcdir=. sh ./osdef.sh
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/buffer.o buffer.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/charset.o charset.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/diff.o diff.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/digraph.o digraph.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/edit.o edit.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/eval.o eval.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/ex_cmds.o ex_cmds.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/ex_cmds2.o ex_cmds2.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/ex_docmd.o ex_docmd.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/ex_eval.o ex_eval.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/ex_getln.o ex_getln.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/fileio.o fileio.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/fold.o fold.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/getchar.o getchar.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/hardcopy.o hardcopy.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/hashtab.o hashtab.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/if_cscope.o if_cscope.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/if_xcmdsrv.o if_xcmdsrv.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/main.o main.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/mark.o mark.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/memfile.o memfile.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/memline.o memline.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/menu.o menu.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/message.o message.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/misc1.o misc1.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/misc2.o misc2.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/move.o move.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/mbyte.o mbyte.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/normal.o normal.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/ops.o ops.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/option.o option.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/os_unix.o os_unix.c
+creating auto/pathdef.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/pathdef.o auto/pathdef.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/popupmnu.o popupmnu.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/quickfix.o quickfix.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/regexp.o regexp.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/screen.o screen.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/search.o search.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/spell.o spell.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/syntax.o syntax.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/tag.o tag.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/term.o term.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/ui.o ui.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/undo.o undo.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/window.o window.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/netbeans.o netbeans.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         version.c -o objects/version.o
+link.sh: The file 'auto/link.sed' exists, which is going to be used now.
+link.sh: If linking fails, try deleting the auto/link.sed file.
+link.sh: If this fails too, try creating an empty auto/link.sed file.
+link.sh: Using auto/link.sed file to remove a few libraries
+  gcc   -L/usr/local/lib        -o vim objects/buffer.o objects/charset.o objects/diff.o objects/digraph.o objects/edit.o objects/eval.o objects/ex_cmds.o objects/ex_cmds2.o objects/ex_docmd.o objects/ex_eval.o objects/ex_getln.o objects/fileio.o objects/fold.o objects/getchar.o objects/hardcopy.o objects/hashtab.o  objects/if_cscope.o objects/if_xcmdsrv.o objects/main.o objects/mark.o objects/memfile.o objects/memline.o objects/menu.o objects/message.o objects/misc1.o objects/misc2.o objects/move.o objects/mbyte.o objects/normal.o objects/ops.o objects/option.o objects/os_unix.o objects/pathdef.o objects/popupmnu.o objects/quickfix.o objects/regexp.o objects/screen.o objects/search.o objects/spell.o objects/syntax.o  objects/tag.o objects/term.o objects/ui.o objects/undo.o objects/window.o         objects/netbeans.o  objects/version.o       -lncurses 
+/bin/ld: objects/os_unix.o: undefined reference to symbol 'dlclose@@GLIBC_2.2.5'
+//usr/lib64/libdl.so.2: error adding symbols: DSO missing from command line
+collect2: error: ld returned 1 exit status
+link.sh: Linking failed, making auto/link.sed empty and trying again
+make[2]: Entering directory `/tmp/skiefer/mnt/vim71/src'
+creating auto/pathdef.c
+gcc -c -I. -Iproto -DHAVE_CONFIG_H   -I/usr/local/include  -g -O2         -o objects/pathdef.o auto/pathdef.c
+make[2]: Leaving directory `/tmp/skiefer/mnt/vim71/src'
+link.sh: Using unmodified link command
+  gcc   -L/usr/local/lib        -o vim objects/buffer.o objects/charset.o objects/diff.o objects/digraph.o objects/edit.o objects/eval.o objects/ex_cmds.o objects/ex_cmds2.o objects/ex_docmd.o objects/ex_eval.o objects/ex_getln.o objects/fileio.o objects/fold.o objects/getchar.o objects/hardcopy.o objects/hashtab.o  objects/if_cscope.o objects/if_xcmdsrv.o objects/main.o objects/mark.o objects/memfile.o objects/memline.o objects/menu.o objects/message.o objects/misc1.o objects/misc2.o objects/move.o objects/mbyte.o objects/normal.o objects/ops.o objects/option.o objects/os_unix.o objects/pathdef.o objects/popupmnu.o objects/quickfix.o objects/regexp.o objects/screen.o objects/search.o objects/spell.o objects/syntax.o  objects/tag.o objects/term.o objects/ui.o objects/undo.o objects/window.o         objects/netbeans.o  objects/version.o       -lncurses -lnsl  -ldl        
+link.sh: Linked OK
+cd xxd; CC="gcc" CFLAGS="-I/usr/local/include -g -O2" \
+        make -f Makefile
+make[2]: Entering directory `/tmp/skiefer/mnt/vim71/src/xxd'
+gcc -I/usr/local/include -g -O2  -DUNIX -o xxd xxd.c
+make[2]: Leaving directory `/tmp/skiefer/mnt/vim71/src/xxd'
+make[1]: Leaving directory `/tmp/skiefer/mnt/vim71/src'
+Starting make in the src directory.
+If there are problems, cd to the src directory and run make there
+cd src && make install
+make[1]: Entering directory `/tmp/skiefer/mnt/vim71/src'
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/bin
+mkdir /tmp/skiefer/mnt/install/bin
+chmod 755 /tmp/skiefer/mnt/install/bin
+if test -f /tmp/skiefer/mnt/install/bin/vim; then \
+  mv -f /tmp/skiefer/mnt/install/bin/vim /tmp/skiefer/mnt/install/bin/vim.rm; \
+  rm -f /tmp/skiefer/mnt/install/bin/vim.rm; \
+fi
+cp vim /tmp/skiefer/mnt/install/bin
+strip /tmp/skiefer/mnt/install/bin/vim
+chmod 755 /tmp/skiefer/mnt/install/bin/vim
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim
+mkdir /tmp/skiefer/mnt/install/share
+mkdir /tmp/skiefer/mnt/install/share/vim
+chmod 755 /tmp/skiefer/mnt/install/share/vim
+cp vimtutor /tmp/skiefer/mnt/install/bin/vimtutor
+chmod 755 /tmp/skiefer/mnt/install/bin/vimtutor
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/doc
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/doc
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/doc
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/print
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/print
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/print
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/colors
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/colors
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/colors
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/syntax
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/syntax
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/syntax
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/indent
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/indent
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/indent
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/ftplugin
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/ftplugin
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/ftplugin
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/autoload
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/autoload
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/autoload
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/autoload/xml
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/autoload/xml
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/autoload/xml
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/plugin
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/plugin
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/plugin
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/tutor
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/tutor
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/tutor
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/spell
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/spell
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/spell
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/compiler
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/compiler
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/compiler
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/man1 "" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/man1
+mkdir /tmp/skiefer/mnt/install/man
+mkdir /tmp/skiefer/mnt/install/man/man1
+installing /tmp/skiefer/mnt/install/man/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/man1/evim.1
+generating help tags
+make[2]: Entering directory `/tmp/skiefer/mnt/vim71/runtime/doc'
+/tmp/skiefer/mnt/install/bin/vim -u NONE -esX -c "helptags ." -c quit
+make[2]: Leaving directory `/tmp/skiefer/mnt/vim71/runtime/doc'
+cd ../runtime/doc; \
+        files=`ls *.txt tags`; \
+        files="$files `ls *.??x tags-?? 2>/dev/null || true`"; \
+        cp $files  /tmp/skiefer/mnt/install/share/vim/vim71/doc; \
+        cd /tmp/skiefer/mnt/install/share/vim/vim71/doc; \
+        chmod 644 $files
+cp  ../runtime/doc/*.pl /tmp/skiefer/mnt/install/share/vim/vim71/doc
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/doc/*.pl
+cp ../runtime/menu.vim /tmp/skiefer/mnt/install/share/vim/vim71/menu.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/menu.vim
+cp ../runtime/synmenu.vim /tmp/skiefer/mnt/install/share/vim/vim71/synmenu.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/synmenu.vim
+cp ../runtime/delmenu.vim /tmp/skiefer/mnt/install/share/vim/vim71/delmenu.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/delmenu.vim
+cp ../runtime/mswin.vim /tmp/skiefer/mnt/install/share/vim/vim71/mswin.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/mswin.vim
+cp ../runtime/evim.vim /tmp/skiefer/mnt/install/share/vim/vim71/evim.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/evim.vim
+cp ../runtime/bugreport.vim /tmp/skiefer/mnt/install/share/vim/vim71/bugreport.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/bugreport.vim
+cp ../runtime/vimrc_example.vim /tmp/skiefer/mnt/install/share/vim/vim71
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/vimrc_example.vim
+cp ../runtime/gvimrc_example.vim /tmp/skiefer/mnt/install/share/vim/vim71
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/gvimrc_example.vim
+cp ../runtime/filetype.vim /tmp/skiefer/mnt/install/share/vim/vim71/filetype.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/filetype.vim
+cp ../runtime/ftoff.vim /tmp/skiefer/mnt/install/share/vim/vim71/ftoff.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/ftoff.vim
+cp ../runtime/scripts.vim /tmp/skiefer/mnt/install/share/vim/vim71/scripts.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/scripts.vim
+cp ../runtime/ftplugin.vim /tmp/skiefer/mnt/install/share/vim/vim71/ftplugin.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/ftplugin.vim
+cp ../runtime/ftplugof.vim /tmp/skiefer/mnt/install/share/vim/vim71/ftplugof.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/ftplugof.vim
+cp ../runtime/indent.vim /tmp/skiefer/mnt/install/share/vim/vim71/indent.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/indent.vim
+cp ../runtime/indoff.vim /tmp/skiefer/mnt/install/share/vim/vim71/indoff.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/indoff.vim
+cp ../runtime/optwin.vim /tmp/skiefer/mnt/install/share/vim/vim71/optwin.vim
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/optwin.vim
+cd ../runtime/print; cp *.ps /tmp/skiefer/mnt/install/share/vim/vim71/print
+cd /tmp/skiefer/mnt/install/share/vim/vim71/print; chmod 644 *.ps
+cd ../runtime/colors; cp *.vim README.txt /tmp/skiefer/mnt/install/share/vim/vim71/colors
+cd /tmp/skiefer/mnt/install/share/vim/vim71/colors; chmod 644 *.vim README.txt
+cd ../runtime/syntax; cp *.vim README.txt /tmp/skiefer/mnt/install/share/vim/vim71/syntax
+cd /tmp/skiefer/mnt/install/share/vim/vim71/syntax; chmod 644 *.vim README.txt
+cd ../runtime/indent; cp *.vim README.txt /tmp/skiefer/mnt/install/share/vim/vim71/indent
+cd /tmp/skiefer/mnt/install/share/vim/vim71/indent; chmod 644 *.vim README.txt
+cd ../runtime/autoload; cp *.vim README.txt /tmp/skiefer/mnt/install/share/vim/vim71/autoload
+cd /tmp/skiefer/mnt/install/share/vim/vim71/autoload; chmod 644 *.vim README.txt
+cd ../runtime/autoload/xml; cp *.vim /tmp/skiefer/mnt/install/share/vim/vim71/autoload/xml
+cd /tmp/skiefer/mnt/install/share/vim/vim71/autoload/xml; chmod 644 *.vim
+cd ../runtime/plugin; cp *.vim README.txt /tmp/skiefer/mnt/install/share/vim/vim71/plugin
+cd /tmp/skiefer/mnt/install/share/vim/vim71/plugin; chmod 644 *.vim README.txt
+cd ../runtime/ftplugin; cp *.vim README.txt /tmp/skiefer/mnt/install/share/vim/vim71/ftplugin
+cd /tmp/skiefer/mnt/install/share/vim/vim71/ftplugin; chmod 644 *.vim README.txt
+cd ../runtime/compiler; cp *.vim README.txt /tmp/skiefer/mnt/install/share/vim/vim71/compiler
+cd /tmp/skiefer/mnt/install/share/vim/vim71/compiler; chmod 644 *.vim README.txt
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/macros
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/macros
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/macros
+cp -r ../runtime/macros/* /tmp/skiefer/mnt/install/share/vim/vim71/macros
+chmod 755 `find /tmp/skiefer/mnt/install/share/vim/vim71/macros -type d -print`
+chmod 644 `find /tmp/skiefer/mnt/install/share/vim/vim71/macros -type f -print`
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/macros/less.sh
+cvs=`find /tmp/skiefer/mnt/install/share/vim/vim71/macros \( -name CVS -o -name AAPDIR \) -print`; \
+      if test -n "$cvs"; then \
+         rm -rf $cvs; \
+      fi
+cp ../runtime/tutor/README* ../runtime/tutor/tutor* /tmp/skiefer/mnt/install/share/vim/vim71/tutor
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/tutor/*
+if test -f ../runtime/spell/en.latin1.spl; then \
+  cp ../runtime/spell/*.spl ../runtime/spell/*.sug ../runtime/spell/*.vim /tmp/skiefer/mnt/install/share/vim/vim71/spell; \
+  chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/spell/*.spl /tmp/skiefer/mnt/install/share/vim/vim71/spell/*.sug /tmp/skiefer/mnt/install/share/vim/vim71/spell/*.vim; \
+fi
+cd /tmp/skiefer/mnt/install/bin; ln -s vim ex
+cd /tmp/skiefer/mnt/install/bin; ln -s vim view
+cd /tmp/skiefer/mnt/install/bin; ln -s vim rvim
+cd /tmp/skiefer/mnt/install/bin; ln -s vim rview
+cd /tmp/skiefer/mnt/install/bin; ln -s vim vimdiff
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/man1/rview.1
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/tools
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/tools
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/tools
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/fr/man1 "-fr" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/fr/man1
+mkdir /tmp/skiefer/mnt/install/man/fr
+mkdir /tmp/skiefer/mnt/install/man/fr/man1
+installing /tmp/skiefer/mnt/install/man/fr/man1/xxd.1
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1 "-fr" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1
+mkdir /tmp/skiefer/mnt/install/man/fr.ISO8859-1
+mkdir /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1
+installing /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1/xxd.1
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/fr.UTF-8/man1 "-fr.UTF-8" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/fr.UTF-8/man1
+mkdir /tmp/skiefer/mnt/install/man/fr.UTF-8
+mkdir /tmp/skiefer/mnt/install/man/fr.UTF-8/man1
+installing /tmp/skiefer/mnt/install/man/fr.UTF-8/man1/xxd.1
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/it/man1 "-it" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/it/man1
+mkdir /tmp/skiefer/mnt/install/man/it
+mkdir /tmp/skiefer/mnt/install/man/it/man1
+installing /tmp/skiefer/mnt/install/man/it/man1/xxd.1
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1 "-it" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1
+mkdir /tmp/skiefer/mnt/install/man/it.ISO8859-1
+mkdir /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1
+installing /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1/xxd.1
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/it.UTF-8/man1 "-it.UTF-8" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/it.UTF-8/man1
+mkdir /tmp/skiefer/mnt/install/man/it.UTF-8
+mkdir /tmp/skiefer/mnt/install/man/it.UTF-8/man1
+installing /tmp/skiefer/mnt/install/man/it.UTF-8/man1/xxd.1
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/pl/man1 "-pl" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/pl/man1
+mkdir /tmp/skiefer/mnt/install/man/pl
+mkdir /tmp/skiefer/mnt/install/man/pl/man1
+installing /tmp/skiefer/mnt/install/man/pl/man1/xxd.1
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1 "-pl" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1
+mkdir /tmp/skiefer/mnt/install/man/pl.ISO8859-2
+mkdir /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1
+installing /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1/xxd.1
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/pl.UTF-8/man1 "-pl.UTF-8" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/pl.UTF-8/man1
+mkdir /tmp/skiefer/mnt/install/man/pl.UTF-8
+mkdir /tmp/skiefer/mnt/install/man/pl.UTF-8/man1
+installing /tmp/skiefer/mnt/install/man/pl.UTF-8/man1/xxd.1
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1 "-ru" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1
+mkdir /tmp/skiefer/mnt/install/man/ru.KOI8-R
+mkdir /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1
+installing /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1/xxd.1
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/ru.UTF-8/man1 "-ru.UTF-8" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+creating /tmp/skiefer/mnt/install/man/ru.UTF-8/man1
+mkdir /tmp/skiefer/mnt/install/man/ru.UTF-8
+mkdir /tmp/skiefer/mnt/install/man/ru.UTF-8/man1
+installing /tmp/skiefer/mnt/install/man/ru.UTF-8/man1/xxd.1
+if test -f /tmp/skiefer/mnt/install/bin/xxd; then \
+  mv -f /tmp/skiefer/mnt/install/bin/xxd /tmp/skiefer/mnt/install/bin/xxd.rm; \
+  rm -f /tmp/skiefer/mnt/install/bin/xxd.rm; \
+fi
+cp xxd/xxd /tmp/skiefer/mnt/install/bin
+strip /tmp/skiefer/mnt/install/bin/xxd
+chmod 755 /tmp/skiefer/mnt/install/bin/xxd
+/bin/sh ./installman.sh xxd /tmp/skiefer/mnt/install/man/man1 "" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/man1/xxd.1
+cp -r ../runtime/tools/* /tmp/skiefer/mnt/install/share/vim/vim71/tools
+cvs=`find /tmp/skiefer/mnt/install/share/vim/vim71/tools \( -name CVS -o -name AAPDIR \) -print`; \
+      if test -n "$cvs"; then \
+         rm -rf $cvs; \
+      fi
+chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/tools/*
+perlpath=`./which.sh perl` && sed -e "s+/usr/bin/perl+$perlpath+" ../runtime/tools/efm_perl.pl >/tmp/skiefer/mnt/install/share/vim/vim71/tools/efm_perl.pl
+awkpath=`./which.sh nawk` && sed -e "s+/usr/bin/nawk+$awkpath+" ../runtime/tools/mve.awk >/tmp/skiefer/mnt/install/share/vim/vim71/tools/mve.awk; if test -z "$awkpath"; then \
+        awkpath=`./which.sh gawk` && sed -e "s+/usr/bin/nawk+$awkpath+" ../runtime/tools/mve.awk >/tmp/skiefer/mnt/install/share/vim/vim71/tools/mve.awk; if test -z "$awkpath"; then \
+        awkpath=`./which.sh awk` && sed -e "s+/usr/bin/nawk+$awkpath+" ../runtime/tools/mve.awk >/tmp/skiefer/mnt/install/share/vim/vim71/tools/mve.awk; fi; fi
+chmod 755 `grep -l "^#!" /tmp/skiefer/mnt/install/share/vim/vim71/tools/*`
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/lang
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/lang
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/lang
+/bin/sh ./mkinstalldirs /tmp/skiefer/mnt/install/share/vim/vim71/keymap
+mkdir /tmp/skiefer/mnt/install/share/vim/vim71/keymap
+chmod 755 /tmp/skiefer/mnt/install/share/vim/vim71/keymap
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/fr/man1 "-fr" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/fr/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/fr/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/fr/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/fr/man1/evim.1
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1 "-fr" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1/evim.1
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/fr.UTF-8/man1 "-fr.UTF-8" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/fr.UTF-8/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/fr.UTF-8/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/fr.UTF-8/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/fr.UTF-8/man1/evim.1
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/it/man1 "-it" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/it/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/it/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/it/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/it/man1/evim.1
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1 "-it" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1/evim.1
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/it.UTF-8/man1 "-it.UTF-8" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/it.UTF-8/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/it.UTF-8/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/it.UTF-8/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/it.UTF-8/man1/evim.1
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/pl/man1 "-pl" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/pl/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/pl/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/pl/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/pl/man1/evim.1
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1 "-pl" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1/evim.1
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/pl.UTF-8/man1 "-pl.UTF-8" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/pl.UTF-8/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/pl.UTF-8/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/pl.UTF-8/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/pl.UTF-8/man1/evim.1
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1 "-ru" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1/evim.1
+/bin/sh ./installman.sh install /tmp/skiefer/mnt/install/man/ru.UTF-8/man1 "-ru.UTF-8" /tmp/skiefer/mnt/install/share/vim /tmp/skiefer/mnt/install/share/vim/vim71 /tmp/skiefer/mnt/install/share/vim ../runtime/doc 644 vim vimdiff evim
+installing /tmp/skiefer/mnt/install/man/ru.UTF-8/man1/vim.1
+installing /tmp/skiefer/mnt/install/man/ru.UTF-8/man1/vimtutor.1
+installing /tmp/skiefer/mnt/install/man/ru.UTF-8/man1/vimdiff.1
+installing /tmp/skiefer/mnt/install/man/ru.UTF-8/man1/evim.1
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/fr/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/fr/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/fr/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/fr/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/fr/man1/rview.1
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/fr.ISO8859-1/man1/rview.1
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/fr.UTF-8/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/fr.UTF-8/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/fr.UTF-8/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/fr.UTF-8/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/fr.UTF-8/man1/rview.1
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/it/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/it/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/it/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/it/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/it/man1/rview.1
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/it.ISO8859-1/man1/rview.1
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/it.UTF-8/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/it.UTF-8/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/it.UTF-8/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/it.UTF-8/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/it.UTF-8/man1/rview.1
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/pl/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/pl/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/pl/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/pl/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/pl/man1/rview.1
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/pl.ISO8859-2/man1/rview.1
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/pl.UTF-8/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/pl.UTF-8/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/pl.UTF-8/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/pl.UTF-8/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/pl.UTF-8/man1/rview.1
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/ru.KOI8-R/man1/rview.1
+/bin/sh ./installml.sh install "" \
+        /tmp/skiefer/mnt/install/man/ru.UTF-8/man1 vim vimdiff evim ex view rvim rview gvim gview rgvim rgview gvimdiff eview
+creating link /tmp/skiefer/mnt/install/man/ru.UTF-8/man1/ex.1
+creating link /tmp/skiefer/mnt/install/man/ru.UTF-8/man1/view.1
+creating link /tmp/skiefer/mnt/install/man/ru.UTF-8/man1/rvim.1
+creating link /tmp/skiefer/mnt/install/man/ru.UTF-8/man1/rview.1
+if test -n "" -a -f po/Makefile; then \
+   cd po; make prefix=/tmp/skiefer/mnt/install LOCALEDIR=/tmp/skiefer/mnt/install/share/vim/vim71/lang \
+   INSTALL_DATA=cp FILEMOD=644 install; \
+fi
+if test -d ../runtime/lang; then \
+   cp ../runtime/lang/README.txt ../runtime/lang/*.vim /tmp/skiefer/mnt/install/share/vim/vim71/lang; \
+   chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/lang/README.txt /tmp/skiefer/mnt/install/share/vim/vim71/lang/*.vim; \
+fi
+if test -d ../runtime/keymap; then \
+   cp ../runtime/keymap/README.txt ../runtime/keymap/*.vim /tmp/skiefer/mnt/install/share/vim/vim71/keymap; \
+   chmod 644 /tmp/skiefer/mnt/install/share/vim/vim71/keymap/README.txt /tmp/skiefer/mnt/install/share/vim/vim71/keymap/*.vim; \
+fi
+if test -d /tmp/skiefer/mnt/install/share/icons/hicolor/48x48/apps -a -w /tmp/skiefer/mnt/install/share/icons/hicolor/48x48/apps \
+        -a ! -f /tmp/skiefer/mnt/install/share/icons/hicolor/48x48/apps/gvim.png; then \
+   cp ../runtime/vim48x48.png /tmp/skiefer/mnt/install/share/icons/hicolor/48x48/apps/gvim.png; \
+fi
+if test -d /tmp/skiefer/mnt/install/share/icons/locolor/32x32/apps -a -w /tmp/skiefer/mnt/install/share/icons/locolor/32x32/apps \
+        -a ! -f /tmp/skiefer/mnt/install/share/icons/locolor/32x32/apps/gvim.png; then \
+   cp ../runtime/vim32x32.png /tmp/skiefer/mnt/install/share/icons/locolor/32x32/apps/gvim.png; \
+fi
+if test -d /tmp/skiefer/mnt/install/share/icons/locolor/16x16/apps -a -w /tmp/skiefer/mnt/install/share/icons/locolor/16x16/apps \
+        -a ! -f /tmp/skiefer/mnt/install/share/icons/locolor/16x16/apps/gvim.png; then \
+   cp ../runtime/vim16x16.png /tmp/skiefer/mnt/install/share/icons/locolor/16x16/apps/gvim.png; \
+fi
+make[1]: Leaving directory `/tmp/skiefer/mnt/vim71/src'

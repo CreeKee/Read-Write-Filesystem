@@ -31,4 +31,14 @@ run:
 	fusermount -u /tmp/skiefer/mnt
 	make
 	./cpe453fs -s -d /tmp/skiefer/mnt customFS.fs
-#1952
+	break implementation.cpp:1065
+	r -s -d /tmp/skiefer/mnt vim.fs
+	handin bellardo 453_rw Makefile README implementation.cpp cpe453fs.h cpe453fs_main.c smartalloc.c smartalloc.h
+
+stupid:
+	fusermount -u /tmp/skiefer/mnt
+	cp vim_stable.fs vim.fs
+	make
+	gdb ./cpe453fs
+
+#79798272

@@ -8,6 +8,7 @@
 #include <sys/statvfs.h>
 #include <algorithm>
 #include <fuse.h>
+#include <time.h>
 
 #include "cpe453fs.h"
 
@@ -34,7 +35,7 @@
 #define BLOCKSIZE 4096
 #define BLOCKSHIFT 12
 #define INDEX(block) (block<<BLOCKSHIFT)
-#define ENDBLOCK(base, offset) ((offset - base) >= (BLOCKSIZE-BNUMSIZE-MINDIRSIZE))
+#define ENDBLOCK(base, offset) ((offset - base) > (BLOCKSIZE-BNUMSIZE-MINDIRSIZE))
 
 
 #define LENSIZE 2
@@ -52,7 +53,8 @@
 #define ALLBLOCKSDEX 56
 
 #define INODE_NUM 2
-#define EXTENT_NUM 3
+#define DEXTENT_NUM 3
+#define FEXTENT_NUM 4
 #define FREE_NUM 5
 
 #define MAXDIRENTRYSIZE (BLOCKSIZE-16)
@@ -69,7 +71,12 @@
 	inode.gid = cntxt->gid;\
 	inode.rdev = 0;\
 	inode.size = sze;\
-	inode.blocks = 0;\
+	inode.blocks = 1;\
+	clock_gettime(CLOCK_REALTIME,&res);\
+	inode.accessTimeS = res.tv_sec;\
+	inode.accessTimeNS = res.tv_nsec;\
+	inode.modTimeS = res.tv_sec;\
+	inode.modTimeNS = res.tv_nsec;\
 }
 
 #define FILLENTRY {\
@@ -77,12 +84,14 @@
 	entry.inode_num = bnum;\
 	entry.name = (char*)calloc(sizeof(char), strlen(name)+1);\
 	memcpy(entry.name, name, strlen(name));\
-	entry.len = strlen(name)+SIZESIZE+BNUMSIZE;\
+	entry.len = strlen(name)+LENSIZE+BNUMSIZE;\
 }
 
-#define PDBG 1
-#define DBG(msg) if(PDBG) fprintf(stderr, "~~~%s~~~\n",msg);
+#define PDBG 0
+#define DBG(msg) if(PDBG) fprintf(stderr, "\n~~~%s~~~\n",msg);
 #define CBG(msg) if(PDBG) fprintf(stderr, "_%s\n",msg);
+
+unsigned char EMPTY_BLOCK[BLOCKSIZE] = {0};
 /**************************************************************
 structs
 **************************************************************/
@@ -124,7 +133,7 @@ cache functions
 class Cache{
 	private:
 	uint32_t* nextcache;
-	uint32_t bmsize;
+	uint64_t bmsize;
 
 	inline void expandCache();
 
@@ -144,29 +153,48 @@ class Cache{
 
 uint32_t Cache::getNewBlock(int fd, void* buff, uint32_t headsize, bool purge){
 	
-	uint8_t* cleanse;
 	uint32_t bnum = getNext(fd, 0);
-	setNext(fd, 0, getNextFree(fd, bnum));
-	setNext(fd, bnum, 0);
+	struct stat sbuf;
+	
 	
 	if(bnum != 0){ 
+		setNext(fd, 0, getNextFree(fd, bnum));
+		setNext(fd, bnum, 0);
+
 		if(PDBG) fprintf(stderr, "_writing new head to block num %d\n",bnum);
+		
 		dwrite(fd, buff, headsize, INDEX(bnum), "failed to write block head when making block\n");
 
 		if(purge){
-			cleanse = (uint8_t*)calloc(sizeof(uint8_t), BLOCKSIZE-BNUMSIZE-headsize);
-			dwrite(fd, cleanse, BLOCKSIZE-BNUMSIZE-headsize, INDEX(bnum)+headsize, "failed to write inode head when making node\n");
-			free(cleanse);
+			dwrite(fd, EMPTY_BLOCK, BLOCKSIZE-BNUMSIZE-headsize, INDEX(bnum)+headsize, "failed to write inode head when making node\n");
 		}
 		if(PDBG) fprintf(stderr, "_got new block, number: %d\n",bnum);
 	}
+	else{
+		
+		if(fstat(fd,&sbuf) != 0){
+			perror("failed to fstat\n");
+			exit(-1);
+		}
+
+		bnum = (sbuf.st_size >> BLOCKSHIFT);
+		if(PDBG) fprintf(stderr, "!must append new block! current filesize: %d new block num %d\n",sbuf.st_size, bnum);
+		//writeblock(fd, EMPTY_BLOCK, bnum);
+		dwrite(fd, EMPTY_BLOCK, BLOCKSIZE, INDEX(bnum), "failed to create empty block\n");
+
+		dwrite(fd, buff, headsize, INDEX(bnum), "failed to write block head when making block\n");
+
+		//TODO add next value directly into cache?
+	}
+
+
 	return bnum;
 }
 
 Cache::Cache(){
-	bmsize = BLOCKSIZE;
-	nextcache = (uint32_t*)malloc(sizeof(uint32_t)<<BLOCKSHIFT);
-	memset(nextcache, -1, BLOCKSIZE*sizeof(uint32_t));
+	bmsize = BLOCKSIZE<<1;
+	nextcache = (uint32_t*)malloc(sizeof(uint32_t)*bmsize);
+	memset(nextcache, -1, bmsize*sizeof(uint32_t));
 }
 
 Cache::~Cache(){
@@ -174,8 +202,9 @@ Cache::~Cache(){
 }
 
 inline void Cache::expandCache(){
+	if(PDBG) fprintf(stderr, "_expanding cache\n");
 	bmsize = bmsize << 1;
-	if((nextcache = (uint32_t*)realloc(nextcache, bmsize)) == NULL){
+	if((nextcache = (uint32_t*)realloc(nextcache, sizeof(uint32_t)*bmsize)) == NULL){
 		perror("failed to reallocate cache");
 		exit(-1);
 	}
@@ -292,7 +321,7 @@ void chainFree(int fd, uint32_t start_block){
 
 	uint32_t target_block = start_block;
 	uint32_t next_target;
-
+	if(PDBG) fprintf(stderr, "chain free\n");
 	while(target_block != 0){
 		next_target = ncache.getNext(fd, target_block);
 		ncache.release(fd, target_block);
@@ -318,7 +347,7 @@ class FileCursor{
 	void moveToExtent(int fd, uint32_t headSize);
 	bool atEnd(){return ENDBLOCK(base, offset);}
 
-	FileCursor(uint32_t block_num){base = INDEX(block_num); offset = base+INODESIZE; prev = 0;}
+	FileCursor(uint32_t block_num, uint32_t headSize){base = INDEX(block_num); offset = base+headSize; prev = 0;}
 	FileCursor(){base = 0; offset = 0; prev = 0;}
 };
 
@@ -326,9 +355,14 @@ dirEntry FileCursor::readDirEntry(int fd){
 
 	dirEntry entry;
 
-	dread(fd, &(entry.len), LENSIZE, offset, "failed to read dir entry size\n")
+	if(base != 0){
+		dread(fd, &(entry.len), LENSIZE, offset, "failed to read dir entry size\n")
+		else{
+			offset += entry.len != 0 ? LENSIZE : 0;
+		}
+	}
 	else{
-		offset += LENSIZE;
+		entry.len = 0;
 	}
 
 	if(entry.len != 0){
@@ -410,7 +444,7 @@ class DirData{
 void DirData::removeDirEntry(){
 	
 	char remainder[BLOCKSIZE] = {0};
-	uint32_t remaindersize = ((BLOCKSIZE-(cursor.offset%BLOCKSIZE)) - entry.len) - BNUMSIZE;
+	uint32_t remaindersize = BLOCKSIZE+cursor.base-cursor.offset - BNUMSIZE;
 
 	uint32_t starset = cursor.offset-entry.len;
 	uint64_t newDirSize = parentDir.size-entry.len;
@@ -433,6 +467,10 @@ void DirData::removeDirEntry(){
 		//connect previous block to next block
 		ncache.setNext(fd, cursor.prev>>BLOCKSHIFT, nextnum);
 
+		parentDir.blocks -= 1;
+		
+		dwrite(fd, &(parentDir.blocks), ALLBLOCKSSIZE, parent_offset+ALLBLOCKSDEX, "failed to write new dir size\n");
+
 	}
 }
 
@@ -445,14 +483,16 @@ bool DirData::nextEntry(){
 	entry = cursor.readDirEntry(fd);
 
 	if(entry.len == 0){
-		cursor.moveToExtent(fd, DIREXTENTHEADSIZE);
+		if(cursor.base != 0) cursor.moveToExtent(fd, DIREXTENTHEADSIZE);
 		if(cursor.base != 0) nextEntry();
 	}
 	else if(cursor.atEnd()){
 		cursor.moveToExtent(fd, DIREXTENTHEADSIZE);
 	}
+
 	//if(PDBG) fprintf(stderr, "got next entry, base at: %d, name: %s\n", cursor.base, entry.name);
-	return cursor.base != 0;
+	
+	return entry.len != 0;
 }
 
 bool DirData::check(const char* name){
@@ -474,11 +514,9 @@ void DirData::decouple(){
 			chainFree(fd, entry.inode_num);	
 		}
 	else{
-		
-		if(pwrite(fd, (void*)(&(entry.inode.Nlink)), NLINKSIZE, INDEX(entry.inode_num)+NLINKDEX) != NLINKSIZE){
-			perror("failed to decrement Nlink\n");
-			exit(-1);
-		}
+
+		dwrite(fd,&(entry.inode.Nlink), NLINKSIZE, INDEX(entry.inode_num)+NLINKDEX,"failed to decrement Nlink\n");
+
 	}
 
 }
@@ -487,11 +525,11 @@ bool DirData::insertEntry(dirEntry entry){
 
 	dirEntry curE;
 	bool inserted = false;
-	uint32_t buffer = EXTENT_NUM;
+	uint32_t buffer = DEXTENT_NUM;
 	parentDir.size += entry.len;
 
 	while(!inserted && cursor.base != 0){
-		
+
 		curE = cursor.readDirEntry(fd);
 		if(curE.len == 0){
 			
@@ -513,16 +551,18 @@ bool DirData::insertEntry(dirEntry entry){
 
 		//get next extent block
 		if((buffer = ncache.getNewBlock(fd, &buffer, DIREXTENTHEADSIZE, true)) != 0){
-			ncache.setNext(fd, cursor.prev, buffer);
+			ncache.setNext(fd, (cursor.prev)>>BLOCKSHIFT, buffer);
 
 			//write entry to new block
-			cursor = FileCursor(buffer);
+			cursor = FileCursor(buffer, DIREXTENTHEADSIZE);
 			writeInsert(entry);
 
 			//update parent dir info
 			dwrite(fd, &(parentDir.size), SIZESIZE, parent_offset+SIZEDEX, "failed to write new dir size\n");
+			
 			parentDir.blocks += 1;
 			dwrite(fd, &(parentDir.blocks), ALLBLOCKSSIZE, parent_offset+ALLBLOCKSDEX, "failed to write new block count\n");
+			
 			inserted = true;
 		}
 		
@@ -542,10 +582,12 @@ void DirData::writeInsert(dirEntry entry){
 	
 	if(PDBG) fprintf(stderr, "inserting new entry len: %d inode_num: %d name: %s\n",*((uint16_t*)buffer),*((uint32_t*)(buffer+2)), buffer+6);
 	
-	dwrite(fd, buffer, entry.len, cursor.offset-LENSIZE, "failed to insert dir entry");
+	dwrite(fd, buffer, entry.len, cursor.offset, "failed to insert dir entry");
 	free(buffer);
 
-
+	if(strcmp(entry.name, "orc.vim") == 0){
+		exit(-1);
+	}
 }
 
 DirData::DirData(int fd, uint32_t block_num, const char* name){
@@ -553,7 +595,7 @@ DirData::DirData(int fd, uint32_t block_num, const char* name){
 	this->fd = fd;
 	parent_offset = INDEX(block_num);
 	parentDir = readInode(fd, INDEX(block_num));
-	cursor = FileCursor(block_num);
+	cursor = FileCursor(block_num, INODESIZE);
 	entry.name = NULL;
 	entry.len = 0;
 	
@@ -564,7 +606,7 @@ DirData::DirData(int fd, uint32_t block_num, const char* name){
 
 DirData::DirData(int fd, uint32_t block_num){
 	
-	cursor = FileCursor(block_num);
+	cursor = FileCursor(block_num, INODESIZE);
 	this->fd = fd;
 	parent_offset = INDEX(block_num);
 	parentDir = readInode(fd, INDEX(block_num));
@@ -576,7 +618,7 @@ DirData::DirData(int fd, uint32_t block_num){
 
 DirData::DirData(int fd, uint32_t parent_block_num, dirEntry entry){
 	
-	cursor = FileCursor(parent_block_num);
+	cursor = FileCursor(parent_block_num, INODESIZE);
 	this->fd = fd;
 	parent_offset = cursor.base;
 	parentDir = readInode(fd, parent_offset);
@@ -586,7 +628,7 @@ DirData::DirData(int fd, uint32_t parent_block_num, dirEntry entry){
 	found = entry.len < MAXDIRENTRYSIZE;
 
 	if(found){
-		if(PDBG) fprintf(stderr, "-------inserting entry into dir----------- %s\n",entry.name);
+		if(PDBG) fprintf(stderr, "-------inserting entry into dir----------- %s %d %d\n",entry.name, entry.len, parent_block_num);
 		if(!insertEntry(entry)){
 			found = false;
 			if(PDBG) fprintf(stderr, "could not insert entry\n");
@@ -673,11 +715,8 @@ static int myopen(void *args, uint32_t block_num)
 
 	inodeHead inode = readInode(fs->fd, INDEX(block_num));
 
-
 	return S_ISREG(inode.mode)/*&&(check permissions)*/ ? 0 : -1;
 
-
-    return 0;
 }
 
 /*verified*/
@@ -686,7 +725,7 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 	DBG("calling myread");
 	//fprintf(stderr, "reading from block %d, size %d, offset %d\n",(int)block_num, (int)size, (int)offset);
 	struct Args *fs = (struct Args*)args;
-	FileCursor cursor(block_num);
+	FileCursor cursor(block_num, INODESIZE);
 	uint32_t index = 0;
 
 	inodeHead inode = readInode(fs->fd, INDEX(block_num));
@@ -696,7 +735,7 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 
 	if(delta < 0){
 		//TODO error
-		exit(-2);
+		return 0;
 	}
 
 	while(offset >= metaSize){
@@ -712,10 +751,8 @@ static int myread(void *args, uint32_t block_num, char *buf, size_t size, off_t 
 
 		metaSize = std::min((int)(BLOCKSIZE + cursor.base - cursor.offset - BNUMSIZE), (int)delta);
 
-		if(pread(fs->fd, buf+index, metaSize, cursor.offset) != metaSize){
-			perror("failed to read from file into buffer");
-			exit(-1);
-		}
+		dread(fs->fd, buf+index, metaSize, cursor.offset, "failed to read from file into buffer\n");
+
 		index += metaSize;
 		delta -= metaSize;
 		
@@ -742,10 +779,8 @@ static int myreadlink(void *args, uint32_t block_num, char *buf, size_t size)
 		exit(-2);
 	}
 
-	if(pread(fs->fd, buf, delta, base+INODESIZE) != delta){
-		perror("failed to read from file into buffer");
-		exit(-1);
-	}
+	dread(fs->fd, buf, delta, base+INODESIZE, "failed to read from file into buffer\n")
+
 	buf[delta] = 0;
 	return 0;
 }
@@ -758,10 +793,8 @@ static uint32_t root_node(void *args)
 
 	uint32_t root_block;
 
-	if(pread(fs->fd, (void*)(&root_block), BNUMSIZE, BLOCKSIZE - 2*BNUMSIZE)!= BNUMSIZE){
-		perror("failed to read root block\n");
-		exit(-1);
-	}
+	dread(fs->fd,&root_block, BNUMSIZE, BLOCKSIZE - 2*BNUMSIZE, "failed to read root block\n");
+
 	return root_block;
 }
 
@@ -770,34 +803,44 @@ static uint32_t root_node(void *args)
 /**************************************************************/
 /*Read only functions*/
 /**************************************************************/
-int chmod(void *args, uint32_t block_num, mode_t new_mode){
+int mychmod(void *args, uint32_t block_num, mode_t new_mode){
 	DBG("calling chmod");
 	struct Args *fs = (struct Args*)args;
-	return LAZYWRITE(new_mode, MODEDEX);
+	struct timespec res;
+	inodeHead inode = readInode(fs->fd, INDEX(block_num));
+
+	inode.mode = new_mode;
+
+	clock_gettime(CLOCK_REALTIME,&res);
+	inode.statusTimeS = res.tv_sec;
+	inode.statusTimeNS = res.tv_nsec;
+
+	dwrite(fs->fd, &inode, INODESIZE, INDEX(block_num), "failed to write new mode\n");
+	return 0;
 }
 
-int chown(void* args, uint32_t block_num, uid_t new_uid, gid_t new_gid){
+int mychown(void* args, uint32_t block_num, uid_t new_uid, gid_t new_gid){
 	
 	DBG("calling chown");
-
 	struct Args *fs = (struct Args*)args;
 
 	return -(LAZYWRITE(new_uid, UIDDEX)||LAZYWRITE(new_gid, GIDDEX));
 
 }
 
-int utimens(void* args, uint32_t block_num, const struct timespec tv[2]){
+int myutimens(void* args, uint32_t block_num, const struct timespec tv[2]){
 	
 	DBG("calling utimes");
 
 	struct Args *fs = (struct Args*)args;
-	
-	return -(LAZYWRITE(tv[0].tv_sec, ATIMESDEX)||LAZYWRITE(tv[0].tv_nsec,ATIMENSDEX)||
-			LAZYWRITE(tv[1].tv_sec, MTIMESDEX)||LAZYWRITE(tv[1].tv_nsec, MTIMENSDEX));
+	dwrite(fs->fd, &(tv[0].tv_sec),BNUMSIZE, INDEX(block_num)+ATIMESDEX, "failed to update access time secs");
+	dwrite(fs->fd, &(tv[0].tv_nsec),BNUMSIZE, INDEX(block_num)+ATIMENSDEX, "failed to update access time nsecs");
+	dwrite(fs->fd, &(tv[1].tv_sec),BNUMSIZE, INDEX(block_num)+MTIMESDEX, "failed to update mod time secs");
+	dwrite(fs->fd, &(tv[1].tv_nsec),BNUMSIZE, INDEX(block_num)+MTIMENSDEX, "failed to update mod time nsecs");
+	return 0;
 }
 
-int rmdir(void* args, uint32_t block_num, const char *name){
-
+int myrmdir(void* args, uint32_t block_num, const char *name){
 	DBG("calling rmdir");
 	struct Args *fs = (struct Args*)args;
 	
@@ -814,6 +857,10 @@ int rmdir(void* args, uint32_t block_num, const char *name){
 	}
 	else if(data.entryIsEmpty()){
 		data.remove();
+
+		data.parentDir.Nlink--;
+		dwrite(fs->fd, &(data.parentDir.Nlink), NLINKSIZE, data.parent_offset+NLINKDEX, "failed to decrement parent dir link count of rmdir\n");
+
 		ret = 0;
 	}
 	else{
@@ -825,7 +872,7 @@ int rmdir(void* args, uint32_t block_num, const char *name){
 	return ret;
 } 
 
-int unlink(void* args, uint32_t block_num, const char *name){
+int myunlink(void* args, uint32_t block_num, const char *name){
 	
 	DBG("calling unlink");
 	struct Args *fs = (struct Args*)args;
@@ -852,7 +899,7 @@ int unlink(void* args, uint32_t block_num, const char *name){
 	return ret;
 }
 
-int mknod(void* args, uint32_t parent_block, const char *name, mode_t new_mode, dev_t new_dev){
+int mymknod(void* args, uint32_t parent_block, const char *name, mode_t new_mode, dev_t new_dev){
 	
 	DBG("calling mknod");
 
@@ -862,6 +909,7 @@ int mknod(void* args, uint32_t parent_block, const char *name, mode_t new_mode, 
 	fuse_context* cntxt = fuse_get_context();
 	uint32_t bnum;
 	int ret = -1;
+	struct timespec res;
 
 	FILLINODE(new_mode, 0);
 	
@@ -878,7 +926,7 @@ int mknod(void* args, uint32_t parent_block, const char *name, mode_t new_mode, 
 	return ret;
 }
 
-int symlink(void* args, uint32_t parent_block, const char *name, const char *link_dest){
+int mysymlink(void* args, uint32_t parent_block, const char *name, const char *link_dest){
 	
 	DBG("calling symlink");
 
@@ -888,6 +936,7 @@ int symlink(void* args, uint32_t parent_block, const char *name, const char *lin
 	fuse_context* cntxt = fuse_get_context();
 	uint32_t bnum;
 	int ret = -1;
+	struct timespec res;
 
 	FILLINODE(S_IFLNK, strlen(link_dest));
 	//dwrite(fs->fd, &inode, INODESIZE, INDEX(bnum), "failed to write inode to new node\n");
@@ -907,7 +956,7 @@ int symlink(void* args, uint32_t parent_block, const char *name, const char *lin
 	return ret;
 }
 
-int mkdir(void* args, uint32_t parent_block, const char *name, mode_t new_mode){
+int mymkdir(void* args, uint32_t parent_block, const char *name, mode_t new_mode){
 	
 	DBG("calling mkdir");
 
@@ -917,14 +966,23 @@ int mkdir(void* args, uint32_t parent_block, const char *name, mode_t new_mode){
 	fuse_context* cntxt = fuse_get_context();
 	uint32_t bnum;
 	uint32_t ret = -1;
+	struct timespec res;
 
 	FILLINODE(new_mode|S_IFDIR, 0);
+
+	//directory points to itself
+	inode.Nlink++;
 	
-	if((bnum = ncache.getNewBlock(fs->fd, (void*)(&inode), INODESIZE, false)) != 0){
+	if((bnum = ncache.getNewBlock(fs->fd, (void*)(&inode), INODESIZE, true)) != 0){
 		FILLENTRY;
 		DirData dir(fs->fd, parent_block, entry);
 		if(dir.found){
-			//dwrite(fs->fd, &inode, INODESIZE, INDEX(entry.inode_num), "could not write inode for new directory\n");
+			
+			//child directory links to the parent, thus the parent's nlink must increase
+			inode = readInode(fs->fd, INDEX(parent_block));
+			inode.Nlink++;
+			dwrite(fs->fd, &(inode.Nlink), NLINKSIZE, INDEX(parent_block)+NLINKDEX, "failed to update parent's link count");
+			
 			ret = 0;
 		}
 		else{
@@ -934,11 +992,13 @@ int mkdir(void* args, uint32_t parent_block, const char *name, mode_t new_mode){
 	else{
 		errno = ENOMEM;
 	}
-
+	if(ret != 0){
+		exit(-2);
+	}
 	return ret;
 }
 
-int link(void* args, uint32_t parent_block, const char *name, uint32_t dest_block){
+int mylink(void* args, uint32_t parent_block, const char *name, uint32_t dest_block){
 	
 	DBG("calling link");
 
@@ -950,7 +1010,7 @@ int link(void* args, uint32_t parent_block, const char *name, uint32_t dest_bloc
 	entry.inode_num = dest_block;
 	entry.name = (char*)calloc(sizeof(char), strlen(name)+1);
 	memcpy(entry.name, name, strlen(name));
-	entry.len = strlen(name)+SIZESIZE+BNUMSIZE;
+	entry.len = strlen(name)+LENSIZE+BNUMSIZE;
 
 	DirData dir(fs->fd, parent_block, entry);
 	
@@ -967,10 +1027,9 @@ int link(void* args, uint32_t parent_block, const char *name, uint32_t dest_bloc
 	return ret;
 }
 
-int rename(void* args, uint32_t old_parent, const char *old_name, uint32_t new_parent, const char *new_name){
+int myrename(void* args, uint32_t old_parent, const char *old_name, uint32_t new_parent, const char *new_name){
 	
 	DBG("calling rename");
-	
 	struct Args *fs = (struct Args*)args;
 	dirEntry oldentry;
 	DirData data(fs->fd, old_parent, old_name);
@@ -1003,26 +1062,72 @@ int rename(void* args, uint32_t old_parent, const char *old_name, uint32_t new_p
 	return ret;
 }
 
-//FIXME
-int truncate(void* args, uint32_t block_num, off_t new_size){
+int mytruncate(void* args, uint32_t block_num, off_t new_size){
 	DBG("calling truncate");
 	
-	
 	struct Args *fs = (struct Args*)args;
-	dwrite(fs->fd, &(new_size), SIZESIZE, INDEX(block_num)+SIZEDEX, "truncation failed\n");
+	inodeHead inode = readInode(fs->fd, INDEX(block_num));
+	uint64_t extentHead = ((uint64_t)FEXTENT_NUM)|((uint64_t)block_num<<32);
+	int32_t qsize = new_size - (BLOCKSIZE-INODESIZE-BNUMSIZE);
+	FileCursor cursor(block_num, INODESIZE);
+	uint32_t bnum;
+	uint32_t oldend;
+	uint32_t oldbcount = inode.blocks;
+	
+	inode.blocks = 1;
+
+	while(qsize > 0){
+		
+		cursor.moveToExtent(fs->fd, FILEEXTENTHEADSIZE);
+		if(cursor.base == 0){
+
+			//get new extent block
+			if((bnum = ncache.getNewBlock(fs->fd, &extentHead, FILEEXTENTHEADSIZE, true)) != 0){
+				
+				//set new block at end of the chain
+				ncache.setNext(fs->fd, cursor.prev>>BLOCKSHIFT, bnum);
+
+				//update cursor
+				oldend = cursor.base;
+				cursor = FileCursor(bnum, FILEEXTENTHEADSIZE);
+				cursor.prev = oldend;
+			}
+			else{
+				//TODO proper return and stuff
+				exit(-1);
+			}
+		}
+
+		qsize -= BLOCKSIZE-FILEEXTENTHEADSIZE-BNUMSIZE;
+		inode.blocks++;
+	}
+
+
+	if(oldbcount > inode.blocks){
+		
+		cursor.moveToExtent(fs->fd, FILEEXTENTHEADSIZE);
+		ncache.setNext(fs->fd,cursor.prev>>BLOCKSHIFT, 0);
+		chainFree(fs->fd, cursor.base>>BLOCKSHIFT);
+
+	}
+
+	dwrite(fs->fd, &(inode.blocks), ALLBLOCKSSIZE, INDEX(block_num)+ALLBLOCKSDEX, "truncation failed\n");
+	dwrite(fs->fd, &(new_size), SIZESIZE, INDEX(block_num)+SIZEDEX, "truncation of size failed\n");
+
+
 	return 0;
 }
 
 int mywrite(void* args, uint32_t block_num, const char *buff, size_t wr_len, off_t wr_offset){
 	
 	DBG("calling mywrite");
-	fprintf(stderr, "--->wr_len %d, wr_offset %d\n", wr_len, wr_offset);
+	if(PDBG) fprintf(stderr, "--->wr_len %d, wr_offset %d\n", wr_len, wr_offset);
 
 	struct Args *fs = (struct Args*)args;
-	FileCursor cursor(block_num);
+	FileCursor cursor(block_num, INODESIZE);
 	uint32_t index = 0;
 	uint32_t bnum = 0;
-	uint64_t extentHead = ((uint64_t)EXTENT_NUM)|((uint64_t)block_num<<32);
+	uint64_t extentHead = ((uint64_t)FEXTENT_NUM)|((uint64_t)block_num<<32);
 	int32_t delta = wr_len;
 	uint32_t metaSize = BLOCKSIZE - INODESIZE - BNUMSIZE;
 	inodeHead inode = readInode(fs->fd, INDEX(block_num));
@@ -1036,7 +1141,7 @@ int mywrite(void* args, uint32_t block_num, const char *buff, size_t wr_len, off
 
 
 	while(wr_offset >= metaSize){
-
+		if(PDBG) fprintf(stderr, "skipping forward offset at %d\n", wr_offset);
 		//move to next extent block
 		cursor.moveToExtent(fs->fd,FILEEXTENTHEADSIZE);
 		
@@ -1057,9 +1162,13 @@ int mywrite(void* args, uint32_t block_num, const char *buff, size_t wr_len, off
 				//set new block at end of the chain
 				ncache.setNext(fs->fd, cursor.prev>>BLOCKSHIFT, bnum);
 
+				inode.blocks += 1;
+
+				dwrite(fs->fd, &(inode.blocks), ALLBLOCKSSIZE, ALLBLOCKSDEX+INDEX(block_num), "failed to update size after writing");
+
 				//update cursor
 				oldend = cursor.base;
-				cursor = FileCursor(bnum);
+				cursor = FileCursor(bnum, FILEEXTENTHEADSIZE);
 				cursor.prev = oldend;
 			}
 			else{
@@ -1074,10 +1183,12 @@ int mywrite(void* args, uint32_t block_num, const char *buff, size_t wr_len, off
 	upsize += wr_offset;
 
 	while(delta > 0){
-
+		if(PDBG) fprintf(stderr, "writing data delta at %d meta alt = %d\n", delta, BLOCKSIZE + cursor.base - cursor.offset - BNUMSIZE);
 		metaSize = std::min((int)(BLOCKSIZE + cursor.base - cursor.offset - BNUMSIZE), (int)delta);
 
 		dwrite(fs->fd, buff+index, metaSize, cursor.offset, "failed to write to file");
+
+		if(PDBG) fprintf(stderr, "finished writing\n");
 
 		index += metaSize;
 		delta -= metaSize;
@@ -1096,9 +1207,13 @@ int mywrite(void* args, uint32_t block_num, const char *buff, size_t wr_len, off
 				//set new block at end of the chain
 				ncache.setNext(fs->fd, cursor.prev >> BLOCKSHIFT, bnum);
 
+				inode.blocks += 1;
+
+				dwrite(fs->fd, &(inode.blocks), ALLBLOCKSSIZE, ALLBLOCKSDEX+INDEX(block_num), "failed to update size after writing");
+
 				//update cursor
 				oldend = cursor.base;
-				cursor = FileCursor(bnum);
+				cursor = FileCursor(bnum, FILEEXTENTHEADSIZE);
 				cursor.prev = oldend;
 			}
 			else{
@@ -1108,8 +1223,12 @@ int mywrite(void* args, uint32_t block_num, const char *buff, size_t wr_len, off
 		}
 	}
 
+	if(PDBG) fprintf(stderr, "done with write loop, time to update inode size\n");
+
 	inode.size = std::max((int)(upsize+index),(int)(inode.size));
 	dwrite(fs->fd, &(inode.size), SIZESIZE, SIZEDEX+INDEX(block_num), "failed to update size after writing");
+
+	if(PDBG) fprintf(stderr, "finished writing the size\n");
 
     return index;
 
@@ -1136,17 +1255,17 @@ struct cpe453fs_ops *CPE453_get_operations(void)
 	ops.root_node = root_node;
 	ops.set_file_descriptor = set_file_descriptor;
 
-	ops.chmod = chmod;
-	ops.chown = chown;
-	ops.utimens = utimens;
-	ops.rmdir = rmdir;
-	ops.unlink = unlink;
-	ops.mknod = mknod;
-	ops.symlink = symlink;
-	ops.mkdir = mkdir;
-	ops.link = link;
-	ops.rename = rename;
-	ops.truncate = truncate;
+	ops.chmod = mychmod;
+	ops.chown = mychown;
+	ops.utimens = myutimens;
+	ops.rmdir = myrmdir;
+	ops.unlink = myunlink;
+	ops.mknod = mymknod;
+	ops.symlink = mysymlink;
+	ops.mkdir = mymkdir;
+	ops.link = mylink;
+	ops.rename = myrename;
+	ops.truncate = mytruncate;
 	ops.write = mywrite;
 
 	return &ops;
